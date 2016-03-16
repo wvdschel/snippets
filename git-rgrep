@@ -1,4 +1,5 @@
 #!/bin/bash
+# git-rgrep is a git command, like git-grep but recurses through submodules.
 
 function die()
 {
