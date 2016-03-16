@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+# A wrapper for "old" Makefile projects to generate a clang compilation_database.json file.
+# Used for libclang-based code indexers/source browsers.
+
+require 'json'
+
+SEPARATORS = /[&;|<>]+/
+COMPILATION_DATABASE="compile_commands.json"
+
+def process_command(cmd, database)
+  cmd.strip!
+  if cmd =~ SEPARATORS
+    cmd.split(SEPARATORS).each { |component_cmd| process_command(component_cmd, database) }
+  else
+    if cmd =~ /^([^\s]+-)?(gcc|g\+\+) /
+      directory = Dir.pwd
+
+      
+      main_object = cmd[/[^\s]+\.(cpp|cc|c)/]
+      if main_object.nil?
+        #puts "Warning: failed to find main compilation object for '${cmd}', ignoring."
+        next
+      end
+
+      database << {'directory' => directory, 'command' => cmd, 'file' => main_object}
+    end
+  end
+end
+
+database = []
+if File.exists? COMPILATION_DATABASE
+  database = JSON::parse(File.read(COMPILATION_DATABASE))
+end
+
+`make -n`.lines.each do |line|
+  process_command(line, database)
+end
+
+File.open(COMPILATION_DATABASE, 'w') { |f| f.print database.to_json }
