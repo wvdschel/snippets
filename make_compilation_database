@@ -12,18 +12,15 @@ def process_command(cmd, database)
   if cmd =~ SEPARATORS
     cmd.split(SEPARATORS).each { |component_cmd| process_command(component_cmd, database) }
   else
-    if cmd =~ /^([^\s]+-)?(gcc|g\+\+) /
-      directory = Dir.pwd
-
+    directory = Dir.pwd
       
-      main_object = cmd[/[^\s]+\.(cpp|cc|c)/]
-      if main_object.nil?
-        #puts "Warning: failed to find main compilation object for '${cmd}', ignoring."
-        next
-      end
-
-      database << {'directory' => directory, 'command' => cmd, 'file' => main_object}
+    main_object = cmd[/[^\s]+\.(cpp|cc|c)/]
+    if main_object.nil?
+      #puts "Warning: failed to find main compilation object for '#{cmd}', ignoring."
+      return
     end
+
+    database << {'directory' => directory, 'command' => cmd, 'file' => main_object}
   end
 end
 
