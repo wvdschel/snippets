@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+# XKCD 936 based password generator
+words = File.readlines('/usr/share/dict/words').map { |l| l.chomp }.reject { |w| w !~ /^[A-z]+$/ }
+STDERR.puts "Loaded #{words.size} for #{words.size ** 3} possible passwords"
+puts words.shuffle[0..2].join('')
