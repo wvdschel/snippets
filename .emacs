@@ -1,7 +1,11 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; This makes it find all the required binaries and libraries I compiled myself. ;;
-;; (Cisco Aurora specific)                                                       ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;; emacs config tested with emacs 23.1.3 and 24.5.1 ;;;;;;;;;;;;;;;;;
+;; If emacs complains about missing packages, M-x install-my-packages.
+;; Assumes rtags binaries are available in $PATH, if not, comment out rtags section.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; This makes emacs find all the required binaries and libraries I compiled myself. ;;
+;; (Cisco Aurora specific)                                                          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (setenv "PATH"
 ;;   (concat
