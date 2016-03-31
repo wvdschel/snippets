@@ -1,0 +1,3 @@
+[submodule ".emacs.d/dylan-mode"]
+	path = .emacs.d/dylan-mode
+	url = https://github.com/dylan-lang/dylan-mode.git
