@@ -75,6 +75,9 @@
         '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
                     love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime)))
 
+(defun define-key-multimap (maps key command)
+  (mapc (lambda (map) (define-key map key command)) maps))
+
 ;;;;;;;;;;;;;;
 ;; Speedbar ;;
 ;;;;;;;;;;;;;;
@@ -304,6 +307,7 @@
 ;; c-mode-common-hook is also called by c++-mode
 (add-hook 'c-mode-common-hook #'my-flycheck-rtags-setup)
 (rtags-restart-process)
+(rtags-start-process-unless-running)
 
 (let ((maps (list c-mode-base-map c++-mode-map)))
   (define-key-multimap maps (kbd "M-?") 'rtags-find-references-at-point) ; Search for references to current symbol
