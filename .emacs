@@ -293,30 +293,28 @@
 (require 'company)
 (require 'flycheck-rtags)
 
-(global-set-key (kbd "M-?") 'rtags-find-references-at-point)
-; Search for symbol definition
-(global-set-key (kbd "M-.") 'rtags-find-symbol-at-point)
-; Search for all symbol mentions (references and definitions), in case C-. and M-. jump to the wrong place
-(global-set-key (kbd "C-?") 'rtags-find-all-references-at-point)
-
-(define-key c-mode-base-map (kbd "M-n") 'rtags-next-match)
-(define-key c++-mode-map (kbd "M-p") 'rtags-previous-match)
-(define-key c-mode-base-map (kbd "M-f") 'rtags-location-stack-forward)
-(define-key c++-mode-map (kbd "M-b") 'rtags-location-stack-back)
-
 (setq rtags-autostart-diagnostics t)
 (rtags-diagnostics)
 (setq rtags-completions-enabled t)
 (push 'company-rtags company-backends)
 (global-company-mode)
-(define-key c-mode-base-map (kbd "M-/") (function company-complete))
-(define-key c++-mode-map (kbd "M-/") (function company-complete))
 ;; (global-set-key (kbd "M-/") 'company-complete)
 (defun my-flycheck-rtags-setup ()
   (flycheck-select-checker 'rtags))
 ;; c-mode-common-hook is also called by c++-mode
 (add-hook 'c-mode-common-hook #'my-flycheck-rtags-setup)
 (rtags-restart-process)
+
+(let ((maps (list c-mode-base-map c++-mode-map)))
+  (define-key-multimap maps (kbd "M-?") 'rtags-find-references-at-point) ; Search for references to current symbol
+  (define-key-multimap maps (kbd "M-.") 'rtags-find-symbol-at-point)     ; Search for symbol definition
+  (define-key-multimap maps (kbd "C-?") 'rtags-find-all-references-at-point) ; Search for all symbol mentions (references and definitions)
+  (define-key-multimap maps (kbd "M-n") 'rtags-next-match)               ; Up/down/next/previous in search results
+  (define-key-multimap maps (kbd "M-p") 'rtags-previous-match)
+  (define-key-multimap maps (kbd "M-f") 'rtags-location-stack-forward)
+  (define-key-multimap maps (kbd "M-b") 'rtags-location-stack-back)
+  (define-key-multimap maps (kbd "M-SPC") (function company-complete))   ; Force company completion with M-space
+  (define-key-multimap maps (kbd "M-SPC") (function company-complete)))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; MELPA over HTTPS ;;
