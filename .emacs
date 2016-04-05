@@ -70,6 +70,7 @@
 
 (defun install-my-packages ()
   (interactive)
+  (package-refresh-contents)
   (mapc (lambda (pkg)
           (unless (package-installed-p pkg) (package-install pkg)))
         '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
