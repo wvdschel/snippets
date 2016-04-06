@@ -1,0 +1,34 @@
+#!/bin/bash
+# git-inroot executes a command in the root of a git repository.
+# By default, it ignores git submodules, but this can be overruled by passing -S
+# as the first argument.
+
+#SHELL=$(getent passwd $(whoami) | cut -d: -f7)
+ORIG_DIR="${PWD}"
+
+SUBMODULE=0
+if [ $1 == -S ]; then
+    shift
+    SUBMODULE=1
+fi
+
+if [ $SUBMODULE != 0 ]; then
+    while ! [ -d .git ] && ! [ -f .git ] && [ $PWD != "/" ]; do
+        cd ..
+    done
+else
+    while ! [ -d .git ] && [ $PWD != "/" ]; do
+        cd ..
+    done
+fi
+
+if ! [ -d .git ] && ( ! [ -f .git ] && [ $SUBMODULE != 0 ); then
+    echo "Error: no git repository found containing ${ORIG_DIR}."
+    cd "${ORIG_DIR}"
+    exit 1
+else
+    $@
+    RETVAL=$?
+    cd "${ORIG_DIR}"
+    exit $RETVAL
+fi;
