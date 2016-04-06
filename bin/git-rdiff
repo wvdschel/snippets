@@ -1,0 +1,49 @@
+#!/bin/bash
+# git-rdiff generates a single monolithic patch of unstaged changes across all submodules.
+# Does not support arguments yet (would need to translate top-level commit references to corresponding
+# submodule commit hashes, for starters).
+
+function die()
+{
+    echo "$@" 1>&2
+    exit 1
+}
+
+function inject_prefix_path()
+{
+    local PATH_PREFIX="${1//\//\/}"
+    # Need two sed's because of greedy regexes.
+    sed -r "s%^(([^ +-]|---|\+\+\+).* a/)%\0${PATH_PREFIX}%g" | sed -r "s%^(([^ +-]|---|\+\+\+).* b/)%\0${PATH_PREFIX}%g"
+}
+
+function rdiff_repo()
+{
+    local REPO_DIR="${1%/}" # Remove trailing slash from first argument
+    if ! [ -z $2 ] ; then   # If second argument is specified, use it as a string to prefix all output with.
+        local PATH_PREFIX="${2%/}/${REPO_DIR}/"
+    else
+        local PATH_PREFIX="${REPO_DIR}/"
+    fi
+    PATH_PREFIX="${PATH_PREFIX//.\//}" # Cut out all './' occurrences
+    local RETURN_PATH="$(pwd)"
+    shift && shift
+    
+    cd $REPO_DIR || die "Failed to change into ${PATH_PREFIX}"
+    git diff $@ | inject_prefix_path "${PATH_PREFIX}"
+    local CHECKED_OUT_SUBREPOS=$(git submodule | cut -c2- | cut -d' ' -f2)
+    while read -r SUBREPO; do
+	if [ -z $SUBREPO ]; then break; fi
+        if ! [ -e $SUBREPO/.git ]; then continue; fi
+	rdiff_repo "${SUBREPO}" "${PATH_PREFIX}" $@
+    done <<< "${CHECKED_OUT_SUBREPOS}"
+    cd $RETURN_PATH
+}
+
+EXTRA_ARGS="--ignore-submodules"
+PAGINATOR="cat"
+if [ -t 1 ] ; then
+    EXTRA_ARGS="${EXTRA_ARGS} --color"
+    PAGINATOR="less -R"
+fi
+
+rdiff_repo . '' ${EXTRA_ARGS} | $PAGINATOR
