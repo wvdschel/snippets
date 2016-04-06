@@ -29,11 +29,18 @@ function rgrep_repo()
     git grep $@ | inject_prefix_path "${PATH_PREFIX}"
     local CHECKED_OUT_SUBREPOS=$(git submodule | cut -c2- | cut -d' ' -f2)
     while read -r SUBREPO; do
-        if [ -z $SUBREPO ]; then break; fi
+	if [ -z $SUBREPO ]; then break; fi
         if ! [ -e $SUBREPO/.git ]; then continue; fi
-        rgrep_repo "${SUBREPO}" "${PATH_PREFIX}" $@
+	rgrep_repo "${SUBREPO}" "${PATH_PREFIX}" $@
     done <<< "${CHECKED_OUT_SUBREPOS}"
     cd $RETURN_PATH
 }
 
-rgrep_repo . '' $@
+EXTRA_ARGS=""
+PAGINATOR="cat"
+if [ -t 1 ] ; then
+  EXTRA_ARGS="--color"
+  PAGINATOR="less -R"
+fi
+
+rgrep_repo . '' ${EXTRA_ARGS} $@ | $PAGINATOR
