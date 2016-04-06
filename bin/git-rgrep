@@ -1,6 +1,7 @@
 #!/bin/bash
 # git-rgrep is a git command, like git-grep but recurses through submodules.
 
+
 function die()
 {
     echo "$@" 1>&2
@@ -39,8 +40,8 @@ function rgrep_repo()
 EXTRA_ARGS=""
 PAGINATOR="cat"
 if [ -t 1 ] ; then
-  EXTRA_ARGS="--color"
-  PAGINATOR="less -R"
+    EXTRA_ARGS="--color"
+    PAGINATOR="less -R"
 fi
 
 rgrep_repo . '' ${EXTRA_ARGS} $@ | $PAGINATOR
