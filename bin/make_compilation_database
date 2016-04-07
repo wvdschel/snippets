@@ -9,7 +9,13 @@ COMPILATION_DATABASE="compile_commands.json"
 
 def process_command(cmd, database)
   cmd.strip!
-  if cmd =~ SEPARATORS
+  if cmd =~ /^make /
+    cmd.sub!(/^make /, 'make -n ')
+    puts cmd
+    `#{cmd}`.lines.each do |line|
+      process_command(line, database)
+    end
+  elsif cmd =~ SEPARATORS
     cmd.split(SEPARATORS).each { |component_cmd| process_command(component_cmd, database) }
   else
     directory = Dir.pwd
@@ -29,11 +35,7 @@ if File.exists? COMPILATION_DATABASE
   database = JSON::parse(File.read(COMPILATION_DATABASE))
 end
 
-command = "make -n #{ARGV.join(' ')}"
-puts command
-`#{command}`.lines.each do |line|
-  puts line
-  process_command(line, database)
-end
+command = "make #{ARGV.join(' ')}"
+process_command(command, database)
 
 File.open(COMPILATION_DATABASE, 'w') { |f| f.print database.to_json }
