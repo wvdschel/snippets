@@ -27,7 +27,7 @@ if ! [ -d .git ] && ( ! [ -f .git ] && [ $SUBMODULE != 0 ); then
     cd "${ORIG_DIR}"
     exit 1
 else
-    $@
+    "$@"
     RETVAL=$?
     cd "${ORIG_DIR}"
     exit $RETVAL
