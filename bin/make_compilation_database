@@ -29,7 +29,10 @@ if File.exists? COMPILATION_DATABASE
   database = JSON::parse(File.read(COMPILATION_DATABASE))
 end
 
-`make -n`.lines.each do |line|
+command = "make -n #{ARGV.join(' ')}"
+puts command
+`#{command}`.lines.each do |line|
+  puts line
   process_command(line, database)
 end
 
