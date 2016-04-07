@@ -44,4 +44,4 @@ if [ -t 1 ] ; then
     PAGINATOR="less -R"
 fi
 
-rgrep_repo . '' ${EXTRA_ARGS} $@ | $PAGINATOR
+rgrep_repo . '' ${EXTRA_ARGS} "$@" | $PAGINATOR
