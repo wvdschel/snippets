@@ -27,12 +27,12 @@ function rgrep_repo()
     shift && shift
     
     cd $REPO_DIR || die "Failed to change into ${PATH_PREFIX}"
-    git grep $@ | inject_prefix_path "${PATH_PREFIX}"
+    git grep "$@" | inject_prefix_path "${PATH_PREFIX}"
     local CHECKED_OUT_SUBREPOS=$(git submodule | cut -c2- | cut -d' ' -f2)
     while read -r SUBREPO; do
 	if [ -z $SUBREPO ]; then break; fi
         if ! [ -e $SUBREPO/.git ]; then continue; fi
-	rgrep_repo "${SUBREPO}" "${PATH_PREFIX}" $@
+	rgrep_repo "${SUBREPO}" "${PATH_PREFIX}" "$@"
     done <<< "${CHECKED_OUT_SUBREPOS}"
     cd $RETURN_PATH
 }
