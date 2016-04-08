@@ -79,6 +79,29 @@
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
 
+;; Find index of an entry in a list
+(defun index (element list &optional base)
+  (when list
+    (let ((curpos (or base 0)))
+      (if (equal element (car list))
+          curpos
+        (index element (cdr list) (+ curpos 1))))))
+
+;; Filter entries of a list matching a predicate
+(defun filter-list (list predicate)
+  (when list 
+    (if (funcall predicate (car list))
+        (cons (car list) (filter-list (cdr list) predicate))
+      (filter-list (cdr list) predicate))))
+
+;; Get the active window
+(defun active-window ()
+  (car (window-list)))
+
+;; Get the active buffer
+(defun active-buffer ()
+  (window-buffer (active-window)))
+
 ;;;;;;;;;;;;;;
 ;; Speedbar ;;
 ;;;;;;;;;;;;;;
@@ -399,6 +422,53 @@
      (define-key function-key-map "\e[1;3B" [M-down])
      (define-key function-key-map "\e[1;3C" [M-right])
      (define-key function-key-map "\e[1;3D" [M-left])))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Switch between buffers in alphabetical order ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Return a list of buffers, sorted by filenames.
+;; By default, this list does not contain non-file buffers.
+;; To include non-file buffers, pass 't as argument.
+(defun my-buffer-list (&optional nofile)
+  (let ((buflist (sort (buffer-list)
+                       (lambda (x y) (string-lessp (buffer-file-name x) (buffer-file-name y))))))
+    (if (not nofile)
+        (filter-list buflist 'buffer-file-name)
+      buflist)))
+
+(defun my-next-buffer (&optional nofile)
+  (interactive)
+  (let ((buflist (my-buffer-list nofile)))
+    (when buflist
+      (let ((curridx (index (active-buffer) buflist)))
+        (if (and curridx (< (+ 1 curridx) (length buflist)))
+            (set-window-buffer (active-window) (nth (+ curridx 1) buflist))
+          (set-window-buffer (active-window) (car buflist)))))))
+
+(defun my-prev-buffer (&optional nofile)
+  (interactive)
+  (let ((buflist (my-buffer-list nofile)))
+    (when buflist
+      (let ((curridx (index (active-buffer) buflist)))
+        (if (and curridx (> curridx 0))
+            (set-window-buffer (active-window) (nth (- curridx 1) buflist))
+          (set-window-buffer (active-window) (nth (- (length buflist) 1) buflist)))))))
+
+(defun my-prev-buffer-all ()
+  (interactive)
+  (my-prev-buffer 't))
+
+(defun my-next-buffer-all ()
+  (interactive)
+  (my-next-buffer 't))
+
+(global-set-key (kbd "<C-right>") 'my-next-buffer-all)
+(global-set-key (kbd "<C-left>") 'my-prev-buffer-all)
+(global-set-key (kbd "<M-right>") 'my-next-buffer)
+(global-set-key (kbd "<M-left>") 'my-prev-buffer)
 
 ;; Start emacs server to allow opening files in this session from the command line
 (server-start)
