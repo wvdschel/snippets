@@ -271,6 +271,14 @@
 
 (global-set-key [C-f3] 'git-grep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Godot GDScript mode ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'gdscript-mode)
+(setq gdscript-tabs-mode t)
+(setq gdscript-tab-width 4)
+
 ;;;;;;;;;;;;;;;;;
 ;; Dylan stuff ;;
 ;;;;;;;;;;;;;;;;;
