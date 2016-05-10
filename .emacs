@@ -74,7 +74,8 @@
   (mapc (lambda (pkg)
           (unless (package-installed-p pkg) (package-install pkg)))
         '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
-                    love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime)))
+                    love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime
+                    flymake-lua company-lua)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -320,6 +321,13 @@
 (elpy-enable)
 ;; (pyvenv-activate "~/.elpy-virtualenv")
 
+;;;;;;;;;;;;;;;
+;; Lua stuff ;;
+;;;;;;;;;;;;;;;
+
+(require 'flymake-lua)
+(add-hook 'lua-mode-hook 'flymake-lua-load)
+
 ;;;;;;;;;;;;;;;;;
 ;; rtags setup ;;
 ;;;;;;;;;;;;;;;;;
@@ -480,3 +488,6 @@
 
 ;; Start emacs server to allow opening files in this session from the command line
 (server-start)
+
+(tool-bar-mode -1)
+(menu-bar-mode -1)
