@@ -75,7 +75,7 @@
           (unless (package-installed-p pkg) (package-install pkg)))
         '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
                     love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime
-                    flymake-lua company-lua)))
+                    flymake-lua company-lua flymake-rust rust-mode)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -276,9 +276,9 @@
 ;; Godot GDScript mode ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(require 'gdscript-mode)
-(setq gdscript-tabs-mode t)
-(setq gdscript-tab-width 4)
+;; (require 'gdscript-mode)
+;; (setq gdscript-tabs-mode t)
+;; (setq gdscript-tab-width 4)
 
 ;;;;;;;;;;;;;;;;;
 ;; Dylan stuff ;;
@@ -286,6 +286,14 @@
 
 (add-to-list 'load-path "~/.emacs.d/dylan-mode")
 (require 'dime)
+
+;;;;;;;;;;;;;;;;;;
+;; Rust support ;;
+;;;;;;;;;;;;;;;;;;
+
+(require 'flymake-rust)
+(add-hook 'rust-mode-hook 'flymake-rust-load)
+(setq flymake-rust-use-cargo 1)
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;; Paredit & SLIME ;;
@@ -491,3 +499,4 @@
 
 (tool-bar-mode -1)
 (menu-bar-mode -1)
+(load-theme 'wombat)
