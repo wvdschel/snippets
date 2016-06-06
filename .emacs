@@ -337,29 +337,33 @@
 (require 'company)
 (require 'flycheck-rtags)
 
-(setq rtags-autostart-diagnostics t)
-(rtags-diagnostics)
-(setq rtags-completions-enabled t)
-(push 'company-rtags company-backends)
-(global-company-mode)
-;; (global-set-key (kbd "M-/") 'company-complete)
-(defun my-flycheck-rtags-setup ()
-  (flycheck-select-checker 'rtags))
-;; c-mode-common-hook is also called by c++-mode
-(add-hook 'c-mode-common-hook #'my-flycheck-rtags-setup)
-(rtags-restart-process)
-(rtags-start-process-unless-running)
+(condition-case nil ; The following commands will fail if rtags is not installed.
+    (progn
+      (setq rtags-autostart-diagnostics t)
+      (rtags-diagnostics)
+      (setq rtags-completions-enabled t)
+      (push 'company-rtags company-backends)
+      ;; (global-set-key (kbd "M-/") 'company-complete)
+      (defun my-flycheck-rtags-setup ()
+        (flycheck-select-checker 'rtags))
+      ;; c-mode-common-hook is also called by c++-mode
+      (add-hook 'c-mode-common-hook #'my-flycheck-rtags-setup)
+      (rtags-restart-process)
+      (rtags-start-process-unless-running)
+      
+      (let ((maps (list c-mode-base-map c++-mode-map)))
+        (define-key-multimap maps (kbd "M-?") 'rtags-find-references-at-point) ; Search for references to current symbol
+        (define-key-multimap maps (kbd "M-.") 'rtags-find-symbol-at-point)     ; Search for symbol definition
+        (define-key-multimap maps (kbd "C-?") 'rtags-find-all-references-at-point) ; Search for all symbol mentions (references and definitions)
+        (define-key-multimap maps (kbd "M-n") 'rtags-next-match)               ; Up/down/next/previous in search results
+        (define-key-multimap maps (kbd "M-p") 'rtags-previous-match)
+        (define-key-multimap maps (kbd "M-f") 'rtags-location-stack-forward)
+        (define-key-multimap maps (kbd "M-b") 'rtags-location-stack-back)
+        (define-key-multimap maps (kbd "M-SPC") (function company-complete))   ; Force company completion with M-space
+        (define-key-multimap maps (kbd "M-SPC") (function company-complete))))
+  (error (message "rtags could not be initialized.")))
 
-(let ((maps (list c-mode-base-map c++-mode-map)))
-  (define-key-multimap maps (kbd "M-?") 'rtags-find-references-at-point) ; Search for references to current symbol
-  (define-key-multimap maps (kbd "M-.") 'rtags-find-symbol-at-point)     ; Search for symbol definition
-  (define-key-multimap maps (kbd "C-?") 'rtags-find-all-references-at-point) ; Search for all symbol mentions (references and definitions)
-  (define-key-multimap maps (kbd "M-n") 'rtags-next-match)               ; Up/down/next/previous in search results
-  (define-key-multimap maps (kbd "M-p") 'rtags-previous-match)
-  (define-key-multimap maps (kbd "M-f") 'rtags-location-stack-forward)
-  (define-key-multimap maps (kbd "M-b") 'rtags-location-stack-back)
-  (define-key-multimap maps (kbd "M-SPC") (function company-complete))   ; Force company completion with M-space
-  (define-key-multimap maps (kbd "M-SPC") (function company-complete)))
+(global-company-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; MELPA over HTTPS ;;
@@ -492,3 +496,4 @@
 
 (tool-bar-mode -1)
 (menu-bar-mode -1)
+(load-theme 'wombat)
