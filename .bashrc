@@ -7,3 +7,11 @@ prompt() {
         PS1=$(printf "$(tput smul)%*s\r$(tput smul)%s$(tput sgr0)\n%s " "${width}" "$PS_SUFFIX" "$PS_NORMAL" "$LAST_EXIT_STRING")
 }
 PROMPT_COMMAND=prompt
+
+function chd {
+  if ! [ -z $2 ]; then
+    cd $(pwd | sed -e "s|$1|$2|")
+  else
+    cd $(pwd | sed -e "s|$1.*|$1|") 
+  fi
+}
