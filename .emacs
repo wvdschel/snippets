@@ -299,21 +299,22 @@
 ;; Paredit & SLIME ;;
 ;;;;;;;;;;;;;;;;;;;;;
 
-(autoload 'enable-paredit-mode "paredit" "Turn on pseudo-structural editing of Lisp code." t)
-(add-hook 'emacs-lisp-mode-hook       #'enable-paredit-mode)
-(add-hook 'eval-expression-minibuffer-setup-hook #'enable-paredit-mode)
-(add-hook 'ielm-mode-hook             #'enable-paredit-mode)
-(add-hook 'lisp-mode-hook             #'enable-paredit-mode)
-(add-hook 'lisp-interaction-mode-hook #'enable-paredit-mode)
-(add-hook 'scheme-mode-hook           #'enable-paredit-mode)
 
-;; Stop SLIME's REPL from grabbing DEL,
-;; which is annoying when backspacing over a '('
-(defun override-slime-repl-bindings-with-paredit ()
-  (define-key slime-repl-mode-map
-    (read-kbd-macro paredit-backward-delete-key) nil))
-(add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
+(when (boundp 'paredit)
+  (autoload 'enable-paredit-mode "paredit" "Turn on pseudo-structural editing of Lisp code." t)
+  (add-hook 'emacs-lisp-mode-hook       #'enable-paredit-mode)
+  (add-hook 'eval-expression-minibuffer-setup-hook #'enable-paredit-mode)
+  (add-hook 'ielm-mode-hook             #'enable-paredit-mode)
+  (add-hook 'lisp-mode-hook             #'enable-paredit-mode)
+  (add-hook 'lisp-interaction-mode-hook #'enable-paredit-mode)
+  (add-hook 'scheme-mode-hook           #'enable-paredit-mode)
 
+  ;; Stop SLIME's REPL from grabbing DEL,
+  ;; which is annoying when backspacing over a '('
+  (defun override-slime-repl-bindings-with-paredit ()
+    (define-key slime-repl-mode-map
+      (read-kbd-macro paredit-backward-delete-key) nil))
+  (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Python environment settings ;;
@@ -344,29 +345,33 @@
 (require 'company)
 (require 'flycheck-rtags)
 
-(setq rtags-autostart-diagnostics t)
-(rtags-diagnostics)
-(setq rtags-completions-enabled t)
-(push 'company-rtags company-backends)
-(global-company-mode)
-;; (global-set-key (kbd "M-/") 'company-complete)
-(defun my-flycheck-rtags-setup ()
-  (flycheck-select-checker 'rtags))
-;; c-mode-common-hook is also called by c++-mode
-(add-hook 'c-mode-common-hook #'my-flycheck-rtags-setup)
-(rtags-restart-process)
-(rtags-start-process-unless-running)
+(condition-case nil ; The following commands will fail if rtags is not installed.
+    (progn
+      (setq rtags-autostart-diagnostics t)
+      (rtags-diagnostics)
+      (setq rtags-completions-enabled t)
+      (push 'company-rtags company-backends)
+      ;; (global-set-key (kbd "M-/") 'company-complete)
+      (defun my-flycheck-rtags-setup ()
+        (flycheck-select-checker 'rtags))
+      ;; c-mode-common-hook is also called by c++-mode
+      (add-hook 'c-mode-common-hook #'my-flycheck-rtags-setup)
+      (rtags-restart-process)
+      (rtags-start-process-unless-running)
+      
+      (let ((maps (list c-mode-base-map c++-mode-map)))
+        (define-key-multimap maps (kbd "M-?") 'rtags-find-references-at-point) ; Search for references to current symbol
+        (define-key-multimap maps (kbd "M-.") 'rtags-find-symbol-at-point)     ; Search for symbol definition
+        (define-key-multimap maps (kbd "C-?") 'rtags-find-all-references-at-point) ; Search for all symbol mentions (references and definitions)
+        (define-key-multimap maps (kbd "M-n") 'rtags-next-match)               ; Up/down/next/previous in search results
+        (define-key-multimap maps (kbd "M-p") 'rtags-previous-match)
+        (define-key-multimap maps (kbd "M-f") 'rtags-location-stack-forward)
+        (define-key-multimap maps (kbd "M-b") 'rtags-location-stack-back)
+        (define-key-multimap maps (kbd "M-SPC") (function company-complete))   ; Force company completion with M-space
+        (define-key-multimap maps (kbd "M-SPC") (function company-complete))))
+  (error (message "rtags could not be initialized.")))
 
-(let ((maps (list c-mode-base-map c++-mode-map)))
-  (define-key-multimap maps (kbd "M-?") 'rtags-find-references-at-point) ; Search for references to current symbol
-  (define-key-multimap maps (kbd "M-.") 'rtags-find-symbol-at-point)     ; Search for symbol definition
-  (define-key-multimap maps (kbd "C-?") 'rtags-find-all-references-at-point) ; Search for all symbol mentions (references and definitions)
-  (define-key-multimap maps (kbd "M-n") 'rtags-next-match)               ; Up/down/next/previous in search results
-  (define-key-multimap maps (kbd "M-p") 'rtags-previous-match)
-  (define-key-multimap maps (kbd "M-f") 'rtags-location-stack-forward)
-  (define-key-multimap maps (kbd "M-b") 'rtags-location-stack-back)
-  (define-key-multimap maps (kbd "M-SPC") (function company-complete))   ; Force company completion with M-space
-  (define-key-multimap maps (kbd "M-SPC") (function company-complete)))
+(global-company-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; MELPA over HTTPS ;;
