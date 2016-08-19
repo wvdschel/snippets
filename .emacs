@@ -75,7 +75,7 @@
           (unless (package-installed-p pkg) (package-install pkg)))
         '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
                     love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime
-                    flymake-lua company-lua flymake-rust rust-mode)))
+                    flymake-lua company-lua cargo-mode rust-mode racer)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -291,14 +291,9 @@
 ;; Rust support ;;
 ;;;;;;;;;;;;;;;;;;
 
-(require 'flymake-rust)
-(add-hook 'rust-mode-hook 'flymake-rust-load)
-(setq flymake-rust-use-cargo 1)
-
 ;;;;;;;;;;;;;;;;;;;;;
 ;; Paredit & SLIME ;;
 ;;;;;;;;;;;;;;;;;;;;;
-
 
 (when (boundp 'paredit)
   (autoload 'enable-paredit-mode "paredit" "Turn on pseudo-structural editing of Lisp code." t)
