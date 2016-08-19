@@ -7,3 +7,6 @@ prompt() {
         PS1=$(printf "$(tput smul)%*s\r$(tput smul)%s$(tput sgr0)\n\$ " "${width}" "$PS_SUFFIX" "$PS_NORMAL")
 }
 PROMPT_COMMAND=prompt
+
+# On OpenSUSE, sbin is not part of PATH by default
+export PATH=$PATH:/sbin:/usr/sbin
