@@ -46,4 +46,5 @@ if [ -t 1 ] ; then
     PAGINATOR="less -R"
 fi
 
+cd $(git inroot pwd)
 rdiff_repo . '' ${EXTRA_ARGS} | $PAGINATOR
