@@ -44,4 +44,5 @@ if [ -t 1 ] ; then
     PAGINATOR="less -R"
 fi
 
+cd $(git inroot pwd)
 rgrep_repo . '' ${EXTRA_ARGS} "$@" | $PAGINATOR
