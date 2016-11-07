@@ -7,16 +7,28 @@
 ;; (Cisco Aurora specific)                                                          ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (setenv "PATH"
-;;   (concat
-;;    "/home/wvanders/pkgs/bin" ":"
-;;    (getenv "PATH")))
+(if (file-exists-p "/home/wvanders/pkgs/bin")
+    (progn
+      (setenv "PATH"
+              (concat
+               "/home/wvanders/pkgs/bin" ":"
+               (getenv "PATH"))))
+  
+  (setenv "LD_LIBRARY_PATH"
+          (concat
+           "/home/wvanders/pkgs/lib" ":"
+           "/home/wvanders/pkgs/lib64" ":"
+           (getenv "LD_LIBRARY_PATH"))))
 
-;; (setenv "LD_LIBRARY_PATH"
-;;   (concat
-;;    "/home/wvanders/pkgs/lib" ":"
-;;    "/home/wvanders/pkgs/lib64" ":"
-;;    (getenv "PATH")))
+;; Use MingW64 if available
+
+(if (file-exists-p "C:\\msys64")
+    (setenv "PATH"
+            (concat
+             "C:\\msys64\\usr\\bin" ";"
+             "C:\\msys64\\mingw32\\bin" ";"
+             "C:\\msys64\\mingw64\\bin" ";"
+             (getenv "PATH"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Utility functions ;;
@@ -284,8 +296,11 @@
 ;; Dylan stuff ;;
 ;;;;;;;;;;;;;;;;;
 
-(add-to-list 'load-path "~/.emacs.d/dylan-mode")
-(require 'dime)
+(condition-case nil
+    (progn
+      (add-to-list 'load-path "~/.emacs.d/dylan-mode")
+      (require 'dime))
+  (error "Failed to load DIME"))
 
 ;;;;;;;;;;;;;;;;;;
 ;; Rust support ;;
@@ -323,7 +338,11 @@
 ;;(setenv "PYTHONHOME" "~/.elpy-libraries/easy_install")
 
 (elpy-enable)
-(pyvenv-activate "~/.elpy-virtualenv")
+(condition-case nil
+    (if (file-exists-p "~/.elpy-virtualenv")
+        (pyvenv-activate "~/.elpy-virtualenv")
+      (warn "No virtualenv found at ~/.elpy-virtualenv"))
+  (error "Failed to init elpy virtualenv"))
 
 ;;;;;;;;;;;;;;;
 ;; Lua stuff ;;
