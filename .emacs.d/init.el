@@ -75,7 +75,7 @@
           (unless (package-installed-p pkg) (package-install pkg)))
         '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
                     love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime
-                    flymake-lua company-lua cargo-mode rust-mode racer)))
+                    flymake-lua company-lua rust-mode racer)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -323,7 +323,7 @@
 ;;(setenv "PYTHONHOME" "~/.elpy-libraries/easy_install")
 
 (elpy-enable)
-;; (pyvenv-activate "~/.elpy-virtualenv")
+(pyvenv-activate "~/.elpy-virtualenv")
 
 ;;;;;;;;;;;;;;;
 ;; Lua stuff ;;
