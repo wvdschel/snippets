@@ -387,6 +387,22 @@
 
 (global-company-mode)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; rust setup using racer ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(setq racer-rust-src-path "~/Documents/rust-src/src/")
+(add-hook 'rust-mode-hook #'racer-mode)
+(add-hook 'racer-mode-hook #'eldoc-mode)
+(add-hook 'racer-mode-hook #'company-mode)
+
+(require 'rust-mode)
+(define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
+(setq company-tooltip-align-annotations t)
+
+(setq company-idle-delay .3)
+(setq company-minimum-prefix-length 2)
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; MELPA over HTTPS ;;
 ;;;;;;;;;;;;;;;;;;;;;;
