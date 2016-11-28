@@ -7,16 +7,28 @@
 ;; (Cisco Aurora specific)                                                          ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (setenv "PATH"
-;;   (concat
-;;    "/home/wvanders/pkgs/bin" ":"
-;;    (getenv "PATH")))
+(if (file-exists-p "/home/wvanders/pkgs/bin")
+    (progn
+      (setenv "PATH"
+              (concat
+               "/home/wvanders/pkgs/bin" ":"
+               (getenv "PATH"))))
+  
+  (setenv "LD_LIBRARY_PATH"
+          (concat
+           "/home/wvanders/pkgs/lib" ":"
+           "/home/wvanders/pkgs/lib64" ":"
+           (getenv "LD_LIBRARY_PATH"))))
 
-;; (setenv "LD_LIBRARY_PATH"
-;;   (concat
-;;    "/home/wvanders/pkgs/lib" ":"
-;;    "/home/wvanders/pkgs/lib64" ":"
-;;    (getenv "PATH")))
+;; Use MingW64 if available
+
+(if (file-exists-p "C:\\msys64")
+    (setenv "PATH"
+            (concat
+             "C:\\msys64\\usr\\bin" ";"
+             "C:\\msys64\\mingw32\\bin" ";"
+             "C:\\msys64\\mingw64\\bin" ";"
+             (getenv "PATH"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Utility functions ;;
@@ -284,8 +296,11 @@
 ;; Dylan stuff ;;
 ;;;;;;;;;;;;;;;;;
 
-(add-to-list 'load-path "~/.emacs.d/dylan-mode")
-(require 'dime)
+(condition-case nil
+    (progn
+      (add-to-list 'load-path "~/.emacs.d/dylan-mode")
+      (require 'dime))
+  (error "Failed to load DIME"))
 
 ;;;;;;;;;;;;;;;;;;
 ;; Rust support ;;
@@ -323,7 +338,11 @@
 ;;(setenv "PYTHONHOME" "~/.elpy-libraries/easy_install")
 
 (elpy-enable)
-;; (pyvenv-activate "~/.elpy-virtualenv")
+(condition-case nil
+    (if (file-exists-p "~/.elpy-virtualenv")
+        (pyvenv-activate "~/.elpy-virtualenv")
+      (warn "No virtualenv found at ~/.elpy-virtualenv"))
+  (error "Failed to init elpy virtualenv"))
 
 ;;;;;;;;;;;;;;;
 ;; Lua stuff ;;
@@ -336,13 +355,12 @@
 ;; rtags setup ;;
 ;;;;;;;;;;;;;;;;;
 
-(if (executable-find "rc")
-  (condition-case nil ; The following commands will fail if rtags is not installed.
-    (progn
-      (require 'rtags)
-      (require 'company)
-      (require 'flycheck-rtags)
+(require 'rtags)
+(require 'company)
+(require 'flycheck-rtags)
 
+(condition-case nil ; The following commands will fail if rtags is not installed.
+    (progn
       (setq rtags-autostart-diagnostics t)
       (rtags-diagnostics)
       (setq rtags-completions-enabled t)
@@ -363,10 +381,27 @@
         (define-key-multimap maps (kbd "M-p") 'rtags-previous-match)
         (define-key-multimap maps (kbd "M-f") 'rtags-location-stack-forward)
         (define-key-multimap maps (kbd "M-b") 'rtags-location-stack-back)
-        (define-key-multimap maps (kbd "M-SPC") (function company-complete)))) ; Force company completion with M-space
-  (error (message "rtags could not be initialized."))))
+        (define-key-multimap maps (kbd "M-SPC") (function company-complete))   ; Force company completion with M-space
+        (define-key-multimap maps (kbd "M-SPC") (function company-complete))))
+  (error (message "rtags could not be initialized.")))
 
 (global-company-mode)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; rust setup using racer ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(setq racer-rust-src-path "~/Documents/rust-src/src/")
+(add-hook 'rust-mode-hook #'racer-mode)
+(add-hook 'racer-mode-hook #'eldoc-mode)
+(add-hook 'racer-mode-hook #'company-mode)
+
+(require 'rust-mode)
+(define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
+(setq company-tooltip-align-annotations t)
+
+(setq company-idle-delay .3)
+(setq company-minimum-prefix-length 2)
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; MELPA over HTTPS ;;
