@@ -355,12 +355,13 @@
 ;; rtags setup ;;
 ;;;;;;;;;;;;;;;;;
 
-(require 'rtags)
-(require 'company)
-(require 'flycheck-rtags)
-
-(condition-case nil ; The following commands will fail if rtags is not installed.
+(if (executable-find "rc")
+  (condition-case nil ; The following commands will fail if rtags is not installed.
     (progn
+      (require 'rtags)
+      (require 'company)
+      (require 'flycheck-rtags)
+
       (setq rtags-autostart-diagnostics t)
       (rtags-diagnostics)
       (setq rtags-completions-enabled t)
@@ -381,9 +382,8 @@
         (define-key-multimap maps (kbd "M-p") 'rtags-previous-match)
         (define-key-multimap maps (kbd "M-f") 'rtags-location-stack-forward)
         (define-key-multimap maps (kbd "M-b") 'rtags-location-stack-back)
-        (define-key-multimap maps (kbd "M-SPC") (function company-complete))   ; Force company completion with M-space
-        (define-key-multimap maps (kbd "M-SPC") (function company-complete))))
-  (error (message "rtags could not be initialized.")))
+        (define-key-multimap maps (kbd "M-SPC") (function company-complete)))) ; Force company completion with M-space
+  (error (message "rtags could not be initialized."))))
 
 (global-company-mode)
 
