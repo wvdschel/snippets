@@ -391,7 +391,7 @@
 ;; rust setup using racer ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(setq racer-rust-src-path "~/Documents/rust-src/src/")
+(setq racer-rust-src-path "~/Unison/OpenSource/rust/src")
 (add-hook 'rust-mode-hook #'racer-mode)
 (add-hook 'racer-mode-hook #'eldoc-mode)
 (add-hook 'racer-mode-hook #'company-mode)
