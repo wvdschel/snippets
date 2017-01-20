@@ -25,3 +25,30 @@ function chd {
     cd $(pwd | sed -e "s|$1.*|$1|") 
   fi
 }
+
+function retry()
+{
+    local RETRY_COUNT=$1
+    local TIMEOUT=$2
+    local PAUSE=$3
+    shift; shift; shift
+    local CMD=("$@")
+
+    echo "Retrying '${CMD[@]}' at most ${RETRY_COUNT} times with $TIMEOUT seconds per attempt, in $PAUSE second intervals."
+    
+    local n=0
+    until [ $n -ge $RETRY_COUNT ]
+    do
+        echo Attempt $n
+        timeout -s 9 $TIMEOUT "${CMD[@]}" && break
+        n=$[$n+1]
+        sleep $PAUSE
+    done
+    if [ $n -eq $RETRY_COUNT ]
+    then
+        echo "Error: ${CMD[@]} failed. Exiting."
+        return 1
+    fi
+
+    return 0
+}
