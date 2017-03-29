@@ -403,6 +403,12 @@
 (setq company-idle-delay .3)
 (setq company-minimum-prefix-length 2)
 
+;;;;;;;;;;;;;
+;; Futhark ;;
+;;;;;;;;;;;;;
+
+(require 'futhark-mode)
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; MELPA over HTTPS ;;
 ;;;;;;;;;;;;;;;;;;;;;;
