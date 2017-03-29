@@ -2,3 +2,6 @@
   excludesfile = ~/.gitignore
 [alias]
   lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+[user]
+	name = Wim Vander Schelden
+	email = lists@fixnum.org
