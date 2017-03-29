@@ -13,29 +13,42 @@ ARGV.each do |arg|
   end
 end
 
+def guess_file(string)
+  components = string.split(':')
+  best_guess = string
+  position = []
+  try_number = false
+  components.size.times do |idx|
+    next_guess = components[0..idx].join(':')
+    if File.exists? next_guess
+      best_guess = next_guess
+      position = []
+      try_number = true
+    elsif try_number
+      begin
+        num = Integer(components[idx])
+        position << num
+      rescue ArgumentError
+        try_number = false
+      end
+    else
+      try_number = false
+    end
+  end
+  
+  if position.empty?
+    cursor = ""
+  else
+    cursor = "+#{position.join(':')}"
+  end
+  "#{cursor} '#{best_guess.gsub("'", "\\'")}'"
+end
+
 command = "emacsclient #{emacsclient_args}"
 args.each do |arg|
-  if File.exists? arg
-    command << " #{arg}"
-    next
-  end
-
-  if arg =~ /:\d+:\d+:?/
-    tmp = arg.split(':')
-    filename = tmp[0...-2].join(':')
-    line     = tmp[-2]
-    column   = tmp[-1]
-    command << " +#{line}:#{column} #{filename}"
-  elsif arg =~ /:\d+:?$/
-    tmp = arg.split(':')
-    filename = tmp[0...-1].join(':')
-    line     = tmp[-1]
-    command << " +#{line} #{filename}"
-  elsif arg =~ /:$/
-    command << arg[0...-1]
-  else
-    command << " #{arg}"
-  end
+  result = guess_file(arg)
+  puts "#{arg} --> #{result}"
+  command << result
 end
 
 puts command
