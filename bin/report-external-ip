@@ -1,2 +1,3 @@
 #!/bin/bash
-curl http://ipecho.net/plain | ssh wim@fixnum.org tee ~/ips/$(hostname -s)
+# curl http://ipecho.net/plain | ssh wim@fixnum.org tee ~/ips/$(hostname -s)
+curl "https://www.google.be/search?q=what+is+my+ip" | grep -Po "([0-9]+(\.[0-9]+){3})" | grep -vP "^10\." | ssh wim@fixnum.org tee ips/$(hostname -s)
