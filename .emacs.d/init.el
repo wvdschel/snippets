@@ -392,6 +392,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (setq racer-rust-src-path "~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src")
+
+;; Detect msys64 rustup install
+(if (file-exists-p (concat "C:\\Users\\" (user-login-name) "\\.cargo\\bin"))
+    (progn
+      (setenv "PATH"
+              (concat
+               "C:\\Users\\" (user-login-name) "\\.cargo\\bin" ";"
+               (getenv "PATH")))
+      (setq racer-cmd (concat "C:\\Users\\" (user-login-name) "\\.cargo\\bin\\racer"))
+      (setq racer-rust-src-path (concat 
+               "C:\\Users\\" (user-login-name) "\\.rustup\\toolchains\\stable-x86_64-pc-windows-gnu\\lib\\rustlib\\src\\rust\\src"))))
+
 (add-hook 'rust-mode-hook #'racer-mode)
 (add-hook 'racer-mode-hook #'eldoc-mode)
 (add-hook 'racer-mode-hook #'company-mode)
