@@ -544,8 +544,12 @@
 
 (global-set-key (kbd "<C-right>") 'my-next-buffer-all)
 (global-set-key (kbd "<C-left>") 'my-prev-buffer-all)
+(global-set-key (kbd "<C-next>") 'my-next-buffer-all)
+(global-set-key (kbd "<C-prior>") 'my-prev-buffer-all)
 (global-set-key (kbd "<M-right>") 'my-next-buffer)
 (global-set-key (kbd "<M-left>") 'my-prev-buffer)
+(global-set-key (kbd "<M-next>") 'my-next-buffer)
+(global-set-key (kbd "<M-prior>") 'my-prev-buffer)
 
 ;; Start emacs server to allow opening files in this session from the command line
 (server-start)
