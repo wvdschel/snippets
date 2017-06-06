@@ -87,7 +87,7 @@
           (unless (package-installed-p pkg) (package-install pkg)))
         '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
                     love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime
-                    flymake-lua company-lua rust-mode racer cargo)))
+                    flymake-lua company-lua rust-mode racer cargo toml-mode)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -410,6 +410,8 @@
 
 (require 'rust-mode)
 (define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
+;(define-key toml-mode-map [f5] #'cargo-process-build)
+;(define-key toml-mode-map [(shift f5)] #'cargo-process-run)
 (define-key rust-mode-map [f5] #'cargo-process-build)
 (define-key rust-mode-map [(shift f5)] #'cargo-process-run)
 (setq company-tooltip-align-annotations t)

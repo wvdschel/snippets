@@ -1,20 +1,28 @@
 ;;; futhark-mode.el --- major mode for editing Futhark source files
 
 ;; Copyright (C) DIKU 2013-2017, University of Copenhagen
+;;
+;; URL: https://github.com/HIPERFIT/futhark
+;; Keywords: languages
+;; Version: 0.1
+;; Package-Requires: ((cl-lib "0.5"))
+
+;; This file is not part of GNU Emacs.
+
+;;; License:
+;; ICS <https://github.com/HIPERFIT/futhark/blob/master/LICENSE>
 
 ;;; Commentary:
-;; This mode provides syntax highlighting and automatic indentation for
-;; Futhark source files.  There is sadly yet no automatic recompilation
-;; or interactive environment, mostly because there is no good futharki
-;; yet.
+;; Futhark is a small programming language designed to be compiled to
+;; efficient GPU code.  This Emacs mode provides syntax highlighting and
+;; conservative automatic indentation for Futhark source code.
 ;;
-;; This mode provides the following features for Futhark source files:
+;; Define your local keybindings in `futhark-mode-map'.  Add startup
+;; functions to `futhark-mode-hook'.
 ;;
-;;   + syntax highlighting
-;;   + automatic indentation
-;;
-;; To load futhark-mode automatically on Emacs startup, put this file in
-;; your load path and require the mode, e.g. something like this:
+;; Manual installation: To load futhark-mode automatically on Emacs
+;; startup, put this file in your load path and require the mode,
+;; e.g. something like this:
 ;;
 ;;   (add-to-list 'load-path "~/.emacs.d/futhark-mode")
 ;;   (require 'futhark-mode)
@@ -24,24 +32,20 @@
 ;;
 ;; This will also tell your Emacs that ".fut" files are to be handled by
 ;; futhark-mode.
-;;
-;; Define your local keybindings in `futhark-mode-map', and add startup
-;; functions to `futhark-mode-hook'.
-
 
 ;;; Code:
 
-(require 'cl) ; `some'
+(require 'cl-lib)
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.fut\\'" . futhark-mode))
 
 (defvar futhark-mode-hook nil
-  "Hook for futhark-mode.  Is run whenever the mode is entered.")
+  "Hook for `futhark-mode'.  Is run whenever the mode is entered.")
 
 (defvar futhark-mode-map
   (make-keymap)
-  "Keymap for futhark-mode.")
+  "Keymap for `futhark-mode'.")
 
 
 ;;; Highlighting
@@ -56,14 +60,14 @@
   (defconst futhark-keywords
     '("if" "then" "else" "let" "loop" "in" "with" "type"
       "fun" "val" "entry" "for" "while" "do"
-      "empty" "unsafe" "default" "include" "import" "module" "open")
+      "empty" "unsafe" "default" "include" "import" "module" "open" "local")
     "All Futhark keywords.")
 
   (defconst futhark-builtin-functions
-    '("pow" "iota" "shape" "replicate" "reshape" "rotate" "transpose" "map"
-      "reduce" "reduceComm" "zip" "unzip" "zipWith" "scan" "split"
-      "concat" "filter" "partition" "redomap" "empty" "copy" "size"
-      "write")
+    '("iota" "shape" "replicate" "reshape" "rearrange" "transpose" "rotate"
+      "split" "concat" "zip" "unzip" "unsafe" "copy" "map" "reduce"
+      "reduce_comm" "scan" "filter" "partition" "scatter" "stream_map"
+      "stream_map_per" "stream_red" "stream_map_per" "stream_seq")
     "All Futhark builtin SOACs, functions, and non-symbolic operators.")
 
   (defconst futhark-builtin-types
@@ -203,7 +207,7 @@
 ;;; Indentation
 
 (defvar futhark-indent-level 2
-  "The basic indent level for futhark-mode.")
+  "The basic indent level for `futhark-mode'.")
 
 (defun futhark-indent-line ()
   "Indent current line as Futhark code."
@@ -249,9 +253,12 @@ In general, prefer as little indentation as possible."
                 (looking-at "{")
                 (or
                  (futhark-keyword-backward "module")
+                 (futhark-keyword-backward "open")
                  (and
                   (ignore-errors (backward-up-list 1) t)
-                  (futhark-keyword-backward "module")))
+                  (or
+                   (futhark-keyword-backward "module")
+                   (futhark-keyword-backward "open"))))
                 (+ futhark-indent-level (current-column))))
              0))
 
@@ -269,8 +276,17 @@ In general, prefer as little indentation as possible."
          (and (looking-at "}")
               (ignore-errors
                 (backward-up-list 1)
-                (futhark-beginning-of-line-text)
-                (current-column))))
+                (or
+                 (save-excursion
+                   (ignore-errors
+                     (and
+                      (backward-up-list 1)
+                      (looking-at "(")
+                      (futhark-keyword-backward "module")
+                      (current-column))))
+                 (and
+                  (futhark-keyword-backward "module")
+                  (current-column))))))
 
        ;; Align "in", "let", or "loop" to the closest previous "let" or "loop".
        (save-excursion
@@ -370,7 +386,7 @@ In general, prefer as little indentation as possible."
        ))))
 
 (defun futhark-min (a b)
-  "Like `min', but more accepting."
+  "Like `min', but also accepts nil values in A and B."
   (or (and (eq nil a) b)
       (and (eq nil b) a)
       (and (not (eq nil a))
@@ -378,7 +394,7 @@ In general, prefer as little indentation as possible."
            (min a b))))
 
 (defun futhark-max (a b)
-  "Like `max', but more accepting."
+  "Like `max', but also accepts nil values in A and B."
   (or (and (eq nil a) b)
       (and (eq nil b) a)
       (and (not (eq nil a))
@@ -405,7 +421,7 @@ In general, prefer as little indentation as possible."
 
 (defun futhark-is-looking-at-keyword ()
   "Check if we are currently looking at a keyword."
-  (some 'futhark-looking-at-word futhark-keywords))
+  (cl-some 'futhark-looking-at-word futhark-keywords))
 
 (defun futhark-backward-part ()
   "Try to jump back one sexp.
@@ -419,14 +435,15 @@ The net effect seems to be that it works ok."
 
 (defun futhark-back-actual-line ()
   "Go back to the first non-empty line, or return nil trying."
-  (while (and (not (bobp))
-              (forward-line -1)
-              (progn (beginning-of-line)
-                     (setq bound (point))
-                     (end-of-line)
-                     t)
-              (ignore-errors
-                (re-search-backward "^[[:space:]]*$" bound)))))
+  (let (bound)
+    (while (and (not (bobp))
+                (forward-line -1)
+                (progn (beginning-of-line)
+                       (setq bound (point))
+                       (end-of-line)
+                       t)
+                (ignore-errors
+                  (re-search-backward "^[[:space:]]*$" bound))))))
 
 (defun futhark-keyword-backward (word)
   "Go to a keyword WORD before the current position.
@@ -499,6 +516,7 @@ Ignore BEGIN, END, and LENGTH (present to satisfy Emacs)."
 
 ;;; Actual mode declaration
 
+;;;###autoload
 (define-derived-mode futhark-mode fundamental-mode "Futhark"
   "Major mode for editing Futhark source files."
   :syntax-table futhark-mode-syntax-table
@@ -507,6 +525,8 @@ Ignore BEGIN, END, and LENGTH (present to satisfy Emacs)."
   (set (make-local-variable 'indent-region-function) nil)
   (set (make-local-variable 'comment-start) "--")
   (set (make-local-variable 'comment-padding) " ")
+  (set (make-local-variable 'paragraph-separate)
+       (concat comment-start " ==$"))
   (add-hook 'after-change-functions 'futhark-check-unsafe nil))
 
 (provide 'futhark-mode)
