@@ -1,10 +1,9 @@
 # Customized PS1 prompt
 PS_NORMAL="[\u@\h \w]"
 prompt() {
+	LAST_EXIT_STRING="$(if [[ $? == 0 ]]; then echo -en "\[\033[0;32m\]\xE2\x9C\x94"; else echo -en "\[\033[0;31m\]\xE2\x9C\x95"; fi; echo -en "\[\033[0;0m\]")"
 	# Set current working directory as terminal title
 	echo -ne "\033]0;${PWD/${HOME}/~}\007"
-	
-        LAST_EXIT_STRING="$(if [[ $? == 0 ]]; then echo -en "\[\033[0;32m\]\xE2\x9C\x94"; else echo -en "\[\033[0;31m\]\xE2\x9C\x95"; fi; echo -en "\[\033[0;0m\]")"
 	if [ -z $DCM_IP ]; then
 		PS_SUFFIX="[`date +%H:%M:%S`]"
 	else
