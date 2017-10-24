@@ -54,3 +54,13 @@ function retry()
 
     return 0
 }
+
+function skiplines()
+{
+    for x in $(seq $1); do
+        read
+    done
+    while read; do
+        echo $REPLY
+    done
+}
