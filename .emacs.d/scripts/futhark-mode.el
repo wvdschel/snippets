@@ -17,21 +17,10 @@
 ;; efficient GPU code.  This Emacs mode provides syntax highlighting and
 ;; conservative automatic indentation for Futhark source code.
 ;;
-;; Define your local keybindings in `futhark-mode-map'.  Add startup
+;; Files with the ".fut" extension are automatically handled by this mode.
+;;
+;; For extensions: Define local keybindings in `futhark-mode-map'.  Add startup
 ;; functions to `futhark-mode-hook'.
-;;
-;; Manual installation: To load futhark-mode automatically on Emacs
-;; startup, put this file in your load path and require the mode,
-;; e.g. something like this:
-;;
-;;   (add-to-list 'load-path "~/.emacs.d/futhark-mode")
-;;   (require 'futhark-mode)
-;;
-;; In this case, you have to create the directory
-;; "~/.emacs.d/futhark-mode" and store this file in that directory.
-;;
-;; This will also tell your Emacs that ".fut" files are to be handled by
-;; futhark-mode.
 
 ;;; Code:
 
@@ -64,7 +53,7 @@
     "All Futhark keywords.")
 
   (defconst futhark-builtin-functions
-    '("iota" "shape" "replicate" "reshape" "rearrange" "transpose" "rotate"
+    '("reshape" "rearrange" "rotate"
       "split" "concat" "zip" "unzip" "unsafe" "copy" "map" "reduce"
       "reduce_comm" "scan" "filter" "partition" "scatter" "stream_map"
       "stream_map_per" "stream_red" "stream_map_per" "stream_seq")
@@ -288,6 +277,31 @@ In general, prefer as little indentation as possible."
                   (futhark-keyword-backward "module")
                   (current-column))))))
 
+       ;; If the previous code line ends with "=", align to the matching "let"
+       ;; or "loop" column plus one indent level.
+       (save-excursion
+         (and (futhark-backward-part)
+              (looking-at "=[[:space:]]*$")
+              (let ((m
+                     (futhark-max
+                      (save-excursion
+                        (futhark-keyword-backward "let"))
+                      (save-excursion
+                        (futhark-keyword-backward "loop")))))
+                (and (not (eq nil m))
+                     (goto-char m)
+                     (+ (current-column) futhark-indent-level)))))
+
+       ;; Don't align "let" if the previous line is blank (be conservative!).
+       (save-excursion
+         (and (futhark-looking-at-word "let")
+              (let ((cur (current-column)))
+                (save-excursion
+                  (forward-line -1)
+                  (and
+                   (futhark-is-empty-line)
+                   cur)))))
+
        ;; Align "in", "let", or "loop" to the closest previous "let" or "loop".
        (save-excursion
          (and (or (futhark-looking-at-word "in")
@@ -317,24 +331,6 @@ In general, prefer as little indentation as possible."
                 (and (not (eq nil m))
                      (goto-char m)
                      (current-column)))))
-
-       ;; If the previous code line ends with "=", align to the matching "fun"
-       ;; or "let" or "loop" column plus one indent level.
-       (save-excursion
-         (and (futhark-backward-part)
-              (looking-at "=[[:space:]]*$")
-              (let ((m
-                     (futhark-max
-                      (futhark-max
-                       (save-excursion
-                         (futhark-keyword-backward "fun"))
-                       (save-excursion
-                         (futhark-keyword-backward "let")))
-                      (save-excursion
-                        (futhark-keyword-backward "loop")))))
-                (and (not (eq nil m))
-                     (goto-char m)
-                     (+ (current-column) futhark-indent-level)))))
 
        ;; Align "then" to nearest "else if" or "if".
        (save-excursion
@@ -418,6 +414,14 @@ In general, prefer as little indentation as possible."
    (save-excursion
      (futhark-beginning-of-line-text)
      (point))))
+
+(defun futhark-is-empty-line ()
+  "Check if the line of the current point is empty.
+It is considered empty if the line consists of zero or more
+whitespace characters."
+  (let ((cur (line-number-at-pos)))
+    (futhark-beginning-of-line-text)
+    (not (= cur (line-number-at-pos)))))
 
 (defun futhark-is-looking-at-keyword ()
   "Check if we are currently looking at a keyword."
@@ -520,13 +524,14 @@ Ignore BEGIN, END, and LENGTH (present to satisfy Emacs)."
 (define-derived-mode futhark-mode fundamental-mode "Futhark"
   "Major mode for editing Futhark source files."
   :syntax-table futhark-mode-syntax-table
-  (set (make-local-variable 'font-lock-defaults) '(futhark-font-lock))
-  (set (make-local-variable 'indent-line-function) 'futhark-indent-line)
-  (set (make-local-variable 'indent-region-function) nil)
-  (set (make-local-variable 'comment-start) "--")
-  (set (make-local-variable 'comment-padding) " ")
-  (set (make-local-variable 'paragraph-separate)
-       (concat comment-start " ==$"))
+  (setq-local font-lock-defaults '(futhark-font-lock))
+  (setq-local indent-line-function 'futhark-indent-line)
+  (setq-local indent-region-function nil)
+  (setq-local comment-start "--")
+  (setq-local comment-start-skip "--[ \t]*")
+  (setq-local paragraph-start (concat " *-- |\\| ==$\\|" page-delimiter))
+  (setq-local paragraph-separate (concat " *-- ==$\\|" page-delimiter))
+  (setq-local comment-padding " ")
   (add-hook 'after-change-functions 'futhark-check-unsafe nil))
 
 (provide 'futhark-mode)
