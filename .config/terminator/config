@@ -1,0 +1,21 @@
+[global_config]
+[keybindings]
+  move_tab_left = <Primary><Shift>Left
+  move_tab_right = <Primary><Shift>Right
+  next_tab = <Shift>Right
+  prev_tab = <Shift>Left
+[layouts]
+  [[default]]
+    [[[child1]]]
+      parent = window0
+      type = Terminal
+    [[[window0]]]
+      parent = ""
+      type = Window
+[plugins]
+[profiles]
+  [[default]]
+    background_color = "#282a36"
+    cursor_color = "#aaaaaa"
+    foreground_color = "#f8f8f2"
+    palette = "#282a36:#ee3c3c:#66de3d:#ffb86c:#5443bc:#bd93f9:#77d6fb:#f8f8f2:#44475a:#ff5555:#50fa7b:#f1fa8c:#6272a4:#ff79c6:#8be9fd:#f8f8f2"
