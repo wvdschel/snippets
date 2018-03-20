@@ -439,6 +439,7 @@
 
 (setq company-idle-delay .3)
 (setq company-minimum-prefix-length 2)
+(setq rust-format-on-save t)
 
 ;;;;;;;;;;;;;
 ;; Futhark ;;
