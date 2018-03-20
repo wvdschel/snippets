@@ -1,6 +1,12 @@
 ;;;;;;;;;;;;;;;;;;; emacs config tested with emacs 23.1.3 and 24.5.1 ;;;;;;;;;;;;;;;;;
 ;; If emacs complains about missing packages, M-x install-my-packages.
-;; Assumes rtags binaries are available in $PATH, if not, comment out rtags section.
+
+;;;;;;;;;;;;;;;;;;
+;; Proxy config ;;
+;;;;;;;;;;;;;;;;;;
+
+(if (file-exists-p "~/.emacs.d/proxyconfig.el")
+    (load "~/.emacs.d/proxyconfig.el"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; This makes emacs find all the required binaries and libraries I compiled myself. ;;
@@ -87,7 +93,7 @@
           (unless (package-installed-p pkg) (package-install pkg)))
         '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
                     love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime
-                    flymake-lua company-lua rust-mode racer cargo toml-mode)))
+                    flymake-lua company-lua rust-mode racer cargo toml-mode dracula-theme)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -120,7 +126,8 @@
 ;;;;;;;;;;;;;;
 
 (custom-set-variables
- '(speedbar-show-unknown-files t)) ; Show unknown file types in speedbar as well
+ '(speedbar-show-unknown-files t))
+;; Show unknown file types in speedbar as well
 
 ;; no startup msg  
 (setq inhibit-startup-message t)   ; Disable startup message
@@ -240,7 +247,7 @@
 
 (setq make-project-args "")
 (defun make-project ()
-  "Run make. Automatically searches for a dixrectory containing a Makefile first"
+  "Run make. Automatically searches for a directory containing a Makefile first"
   (interactive)
   (let ((orig-dir (parent-directory (expand-file-name (buffer-file-name)))))
     (let ((make-dir (find-dir-containing orig-dir "Makefile")))
@@ -408,12 +415,26 @@
 (add-hook 'racer-mode-hook #'eldoc-mode)
 (add-hook 'racer-mode-hook #'company-mode)
 
+(setq my-cargo-args "")
+(defun cargo-args-prompt ()
+  "Run cargo build after modifying the arguments to the command."
+  (interactive)
+  (setq my-cargo-args (read-from-minibuffer "cargo args: "
+                                                my-cargo-args))
+  (setq cargo-process--command-build (concat "build " my-cargo-args))
+  (setq cargo-process--command-run (concat "run " my-cargo-args))
+  (setq cargo-process--command-check (concat "check " my-cargo-args))
+  (setq cargo-process--command-clippy (concat "clippy " my-cargo-args)))
+
 (require 'rust-mode)
 (define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
 ;(define-key toml-mode-map [f5] #'cargo-process-build)
 ;(define-key toml-mode-map [(shift f5)] #'cargo-process-run)
 (define-key rust-mode-map [f5] #'cargo-process-build)
-(define-key rust-mode-map [(shift f5)] #'cargo-process-run)
+(define-key rust-mode-map [(shift f5)] #'cargo-args-prompt)
+(define-key rust-mode-map [f6] #'cargo-process-run)
+(define-key rust-mode-map [f7] #'cargo-process-clippy)
+(define-key rust-mode-map [f8] #'cargo-process-check)
 (setq company-tooltip-align-annotations t)
 
 (setq company-idle-delay .3)
@@ -478,12 +499,7 @@
 (global-set-key [f4] 'redraw-display)
 
 ;; (lush-theme)
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(flymake-start-syntax-check-on-newline t))
+
 
 ;; Terminal keycodes (because GNU screen and GNU emacs don't agree on keycodes & terminal capabilities)
 (add-hook 'term-setup-hook
@@ -560,4 +576,4 @@
 
 (tool-bar-mode -1)
 (menu-bar-mode -1)
-(load-theme 'wombat)
+(load-theme 'dracula t)
