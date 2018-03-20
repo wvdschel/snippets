@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if ( netstat -lan | grep 127.0.0.1:9000 | grep -q LISTEN ) ; then
+	echo "Someone is already listening on part 9000. Exiting"
+	exit 0
+fi
+
+HOST=fixnum.org
+ssh -D127.0.0.1:9000 wim@$HOST bash -c "'while true; do date; sleep 10; done'"
