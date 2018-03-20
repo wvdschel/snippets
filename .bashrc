@@ -64,3 +64,6 @@ function skiplines()
         echo $REPLY
     done
 }
+
+source $HOME/.cargo/env
+alias syncup=~/Unison/sync.sh
