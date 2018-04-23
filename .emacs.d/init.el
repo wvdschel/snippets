@@ -1,5 +1,19 @@
-;;;;;;;;;;;;;;;;;;; emacs config tested with emacs 23.1.3 and 24.5.1 ;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;; emacs config tested with emacs 23.1.3 and 24.5.1 ;;;;;;;;;;;;;;;;;
 ;; If emacs complains about missing packages, M-x install-my-packages.
+
+;; Customized settings (pervents emacs from messing with our custom-set-variables calls further down)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (eziam-theme goose-theme toml-mode slime racer paredit lush-theme love-minor-mode ggtags flymake-lua flycheck-rtags erlang elpy elixir-mode dracula-theme company-rtags company-lua cmake-mode cmake-ide cargo)))
+ '(speedbar-show-unknown-files t))
+
+;; Ctrl-Z by default backgrounds emacs, which is pretty pointless and annoying
+(global-unset-key (kbd "C-z"))
 
 ;;;;;;;;;;;;;;;;;;
 ;; Proxy config ;;
@@ -93,7 +107,8 @@
           (unless (package-installed-p pkg) (package-install pkg)))
         '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
                     love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime
-                    flymake-lua company-lua rust-mode racer cargo toml-mode dracula-theme)))
+                    flymake-lua company-lua rust-mode racer cargo toml-mode dracula-theme
+                    flycheck-rtags company-rtags eziam-theme)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -125,9 +140,7 @@
 ;; Speedbar ;;
 ;;;;;;;;;;;;;;
 
-(custom-set-variables
- '(speedbar-show-unknown-files t))
-;; Show unknown file types in speedbar as well
+ ;; Show unknown file types in speedbar as well
 
 ;; no startup msg  
 (setq inhibit-startup-message t)   ; Disable startup message
@@ -275,7 +288,7 @@
 
 (defun git-grep (search)
   "git grep through the repository."
-  (interactive (list (completing-read "Search for: " nil nil nil (current-word))))
+  (interactive (list (read-from-minibuffer "Search for: " nil nil nil (current-word))))
   (let ((current-file-dir (parent-directory (expand-file-name (buffer-file-name))))
         (current-dir      (getenv "PWD")))
     (let ((git-top-dir      (find-dir-containing current-file-dir ".git")))
@@ -362,6 +375,24 @@
 ;; rtags setup ;;
 ;;;;;;;;;;;;;;;;;
 
+(defvar rtags-speeddial-menu
+  (let ((menu (make-sparse-keymap "RTags speeddial")))
+    (define-key menu [rtags-speeddial-previous]       '("Previous match" . rtags-previous-match))
+    (define-key menu [rtags-speeddial-next]           '("Next match" . rtags-next-match))
+    (define-key menu [rtags-speeddial-separator2]     '(menu-item "--single-line"))
+    (define-key menu [rtags-speeddial-stack-forward]  '("Go forward" . rtags-location-stack-forward))
+    (define-key menu [rtags-speeddial-stack-back]     '("Go back" . rtags-location-stack-back))
+    (define-key menu [rtags-speeddial-separator1]     '(menu-item "--single-line"))
+    (define-key menu [rtags-speeddial-all-references] '("Find all references" . rtags-find-all-references-at-point))
+    (define-key menu [rtags-speeddial-references]     '("Find references" . rtags-find-references-at-point))
+    (define-key menu [rtags-speeddial-definition]     '("Find symbol" . rtags-find-symbol-at-point))
+    (define-key menu [rtags-speeddial-complete]       '("Auto complete" . company-complete))
+    menu))
+
+(defun rtags-speeddial-menu-open ()
+    (interactive)
+    (popup-menu rtags-speeddial-menu))
+
 (if (executable-find "rc")
   (condition-case nil ; The following commands will fail if rtags is not installed.
     (progn
@@ -378,10 +409,10 @@
         (flycheck-select-checker 'rtags))
       ;; c-mode-common-hook is also called by c++-mode
       (add-hook 'c-mode-common-hook #'my-flycheck-rtags-setup)
-      (rtags-restart-process)
       (rtags-start-process-unless-running)
       
       (let ((maps (list c-mode-base-map c++-mode-map)))
+        (define-key-multimap maps (kbd "C-z") 'rtags-speeddial-menu-open)
         (define-key-multimap maps (kbd "M-?") 'rtags-find-references-at-point) ; Search for references to current symbol
         (define-key-multimap maps (kbd "M-.") 'rtags-find-symbol-at-point)     ; Search for symbol definition
         (define-key-multimap maps (kbd "C-?") 'rtags-find-all-references-at-point) ; Search for all symbol mentions (references and definitions)
@@ -389,10 +420,22 @@
         (define-key-multimap maps (kbd "M-p") 'rtags-previous-match)
         (define-key-multimap maps (kbd "M-f") 'rtags-location-stack-forward)
         (define-key-multimap maps (kbd "M-b") 'rtags-location-stack-back)
-        (define-key-multimap maps (kbd "M-SPC") (function company-complete)))) ; Force company completion with M-space
+        (define-key-multimap maps (kbd "s-SPC") (function company-complete))
+        (define-key-multimap maps (kbd "M-SPC") (function company-complete)) ; Force company completion with M-space
+      ))
   (error (message "rtags could not be initialized."))))
 
-(global-company-mode)
+;;;;;;;;;;;;;;;;;;
+;; ggtags setup ;;
+;;;;;;;;;;;;;;;;;;
+
+;; (add-hook 'c-mode-common-hook
+;;           (lambda ()
+;;             (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
+;;               (ggtags-mode 1))))
+
+;; (add-hook 'c-mode-hook (lambda () ggtags-mode 1))
+;; (add-hook 'c++-mode-hook (lambda () ggtags-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; rust setup using racer ;;
@@ -439,7 +482,6 @@
 
 (setq company-idle-delay .3)
 (setq company-minimum-prefix-length 2)
-(setq rust-format-on-save t)
 
 ;;;;;;;;;;;;;
 ;; Futhark ;;
@@ -577,4 +619,15 @@
 
 (tool-bar-mode -1)
 (menu-bar-mode -1)
-(load-theme 'dracula t)
+(load-theme 'eziam-dusk t)
+(setq-default frame-title-format "%b (%f)")
+(global-company-mode)
+
+;; Scaler specific config
+(load "~/.emacs.d/scripts/scaler.el")
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
