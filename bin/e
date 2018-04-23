@@ -4,10 +4,13 @@
 
 emacsclient_args = "-n "
 args = []
+defocus = false
 
 ARGV.each do |arg|
   if arg == "--wait" or arg == "-w"
     emacsclient_args = ""
+  elsif arg == "--nofocus" or arg == "-n"
+    defocus = true
   else
     args << arg
   end
@@ -53,3 +56,6 @@ end
 
 puts command
 system(command)
+if defocus
+  system("wmctrl -ia #{ENV['WINDOWID']}")
+end
