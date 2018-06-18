@@ -6,14 +6,14 @@ class TraceFunctionsI(gdb.Command):
     def __init__(self):
         self.threads = {}
         self.context_switch_interval = 0
-        self.step_size = 10
+        self.step_size = 1
         self.output_filename = None
 
         self.reset()
         if hasattr(gdb.events, "new_thread"):
             gdb.events.new_thread.connect(self.new_thread)
         else:
-            printf("This GDB does not know the new_thread event, multi-threading will not work.")
+            TraceFunctionsI.printf("This GDB does not know the new_thread event, multi-threading will not work.")
             
         super(TraceFunctionsI, self).__init__("tracefunctionsi", gdb.COMMAND_OBSCURE)
 
@@ -66,7 +66,10 @@ class TraceFunctionsI(gdb.Command):
                 pass
         
         if instruction_count:
-            self.tracefunctionsi(instruction_count)
+            if len(argv) > 1:
+                self.tracefunctionsi(instruction_count, argv[1])
+            else:
+                self.tracefunctionsi(instruction_count)
         elif command == "step-size":
             try:
                 self.step_size = int(argv[1])
@@ -89,7 +92,7 @@ class TraceFunctionsI(gdb.Command):
             print("  Step size: %d instructions" % self.step_size)
             print("  Context switch interval: %d steps" % self.context_switch_interval)
         else:
-            print("Usage: tracefunctionsi (<instruction count> | output [filename] | step-size <instruction count> | context-switch-interval <step count> | info)")
+            print("Usage: tracefunctionsi (<instruction count> [stop_function] | output [filename] | step-size <instruction count> | context-switch-interval <step count> | info)")
 
     def log(self, prefix, pc, function, filename, linenumber):
         timestamp = (datetime.now() - self.start_time).total_seconds()
@@ -109,7 +112,7 @@ class TraceFunctionsI(gdb.Command):
 
     def switch_thread(self, current_thread_id=None, first_thread_id=None):
         if len(self.threads) == 0:
-            printf("warning: no known threads, no thread switch performed.")
+            TraceFunctionsI.printf("warning: no known threads, no thread switch performed.")
             return
         all_threads = sorted(self.threads.keys())
         if current_thread_id is None:
@@ -124,7 +127,7 @@ class TraceFunctionsI(gdb.Command):
         except ValueError:
             next_thread_idx = 0
 
-        #printf("Attempting to switch to thread at idx %d of %s" % (next_thread_idx, all_threads))
+        #TraceFunctionsI.printf("Attempting to switch to thread at idx %d of %s" % (next_thread_idx, all_threads))
         next_thread_id = all_threads[next_thread_idx]
         if next_thread_id == first_thread_id:
             if len(all_threads) > 0:
@@ -157,7 +160,7 @@ class TraceFunctionsI(gdb.Command):
             gdb.execute("set scheduler-locking on", to_string=True)
             TraceFunctionsI.printf("switch to thread %s completed" % (next_thread.ptid,))
 
-    def tracefunctionsi(self, instruction_count):
+    def tracefunctionsi(self, instruction_count, until_string=None):
         try:
             gdb.execute("set pagination off", to_string=True)
             #gdb.execute("set scheduler-locking on", to_string=True)
@@ -181,7 +184,11 @@ class TraceFunctionsI(gdb.Command):
                     TraceFunctionsI.printf("Initiating thread switch")
                     self.switch_thread()
 
-                gtid = gdb.selected_thread().global_num
+                try:
+                    gtid = gdb.selected_thread().global_num
+                except AttributeError:
+                    TraceFunctionsI.printf("Cannot determine thread id.")
+                    gtid = 0
                 frame = gdb.newest_frame()
                 sal = frame.find_sal()
                 if sal.symtab:
@@ -213,9 +220,16 @@ class TraceFunctionsI(gdb.Command):
                         active_source_files[gtid] = filename
                         active_source_lines[gtid] = linenumber
                         first_addrs[gtid] = frame.pc()
-
+                        
+                if until_string:
+                    if str(function).endswith(until_string) \
+                       or (until_string + "(") in str(function) \
+                       or ("%s:%d" % (filename, linenumber)).endswith(until_string) \
+                       or "0x%x" % frame.pc() == until_string.lower():
+                        TraceFunctionsI.printf("Reached %s, stopping trace." % until_string)
+                        instruction_count = 0
                 curr_step_size = min(self.step_size, instruction_count)
-                gdb.execute("stepi %d" % curr_step_size, to_string=True)
+                gdb.execute("step %d" % curr_step_size, to_string=True)
                 step_in_thread += 1
                 instruction_count -= curr_step_size
                 #TraceFunctionsI.printf("Stepped %d instructions, step %d/%d in thread %d, %d instructions left" % (

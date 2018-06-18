@@ -27,7 +27,7 @@ class FollowEditor(gdb.Command):
         self.current_loc = new_loc
         
         command = self.editor_command.replace("%L", str(line)).replace("%F", filename).replace("%%", "%")
-        #TraceFunctionsI.printf("Trying to run %s" % command)
+        #FollowEditor.printf("Trying to run %s" % command)
         proc = subprocess.Popen(command, shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -48,7 +48,7 @@ class FollowEditor(gdb.Command):
                         if filename and isfile(filename):
                             self.run_editor_command(filename, sal.line)
                         else:
-                            TraceFunctionsI.printf("No such file: %s" % filename)
+                            FollowEditor.printf("No such file: %s" % filename)
         except Exception as e:
             string_err = str(e)
             if string_err != "No frame is currently selected.":
@@ -86,7 +86,7 @@ class FollowEditor(gdb.Command):
         #         if dir_from in self.directories:
         #             del self.directories[dir_from]
         #         else:
-        #             TraceFunctionsI.printf("Unknown directory: %s" % dir_from)
+        #             FollowEditor.printf("Unknown directory: %s" % dir_from)
         #     else:
         #         print("usage: follow-editor del-path-translation <from-directory>")
         elif command == "info" or command is None:
