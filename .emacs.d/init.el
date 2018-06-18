@@ -1,5 +1,11 @@
-;;;;;;;;;;;;;;;;;; emacs config tested with emacs 23.1.3 and 24.5.1 ;;;;;;;;;;;;;;;;;
-;; If emacs complains about missing packages, M-x install-my-packages.
+;;; init.el --- Emacs configuration
+
+;;; Commentary:
+
+;; This is a basic Emacs config file, built around emacs-lsp.
+;; If Emacs complains about missing packages, M-x install-my-packages.
+
+;;; Code:
 
 ;; Customized settings (pervents emacs from messing with our custom-set-variables calls further down)
 (custom-set-variables
@@ -7,10 +13,16 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(delete-selection-mode nil)
  '(package-selected-packages
    (quote
-    (eziam-theme goose-theme toml-mode slime racer paredit lush-theme love-minor-mode ggtags flymake-lua flycheck-rtags erlang elpy elixir-mode dracula-theme company-rtags company-lua cmake-mode cmake-ide cargo)))
- '(speedbar-show-unknown-files t))
+    (toml-mode slime paredit lsp-rust love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua company-lsp cmake-mode cargo))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
 
 ;; Ctrl-Z by default backgrounds emacs, which is pretty pointless and annoying
 (global-unset-key (kbd "C-z"))
@@ -105,10 +117,26 @@
   (package-refresh-contents)
   (mapc (lambda (pkg)
           (unless (package-installed-p pkg) (package-install pkg)))
-        '(cmake-ide cmake-mode company dash elixir-mode elpy epl erlang flycheck
-                    love-minor-mode lua-mode lush-theme paredit pkg-info rtags slime
-                    flymake-lua company-lua rust-mode racer cargo toml-mode dracula-theme
-                    flycheck-rtags company-rtags eziam-theme)))
+        '(
+          ;; Non-default language support
+          cmake-mode rust-mode toml-mode lua-mode love-minor-mode
+                     futhark-mode
+                     ;; General emacs frameworks
+                     company dash flycheck
+                     ;; Language server protocol support
+                     lsp-mode company-lsp
+                     ;; Python
+                     elpy
+                     ;; LISP
+                     paredit pkg-info slime
+                     ;; Lua
+                     flymake-lua company-lua
+                     ;; Rugst
+                     cargo lsp-rust
+                     ;; C/C++
+                     cquery
+		     ;; Various quality of life plugins
+		     highlight-symbol highlight-parentheses eziam-theme)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -207,35 +235,14 @@
 ;; Highlight symbols ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-(require 'highlight-symbol)
 (global-set-key [f12] 'highlight-symbol-at-point)
 (global-set-key [f3] 'highlight-symbol-next)
 (global-set-key [(shift f3)] 'highlight-symbol-prev)
 (global-set-key [(shift meta f3)] 'highlight-symbol-query-replace)
-(highlight-symbol-mode)
-
-;;;;;;;;;;;;;;;;;;;
-;; CScope search ;;
-;;;;;;;;;;;;;;;;;;;
-
-;; Deprecated by rtags - see below!
-;; (require 'xcscope)
-;; ; Search for all callers of a symbol
-;; (global-set-key (kbd "M-?") 'cscope-find-functions-calling-this-function)
-;; ; Search for symbol definition
-;; (global-set-key (kbd "M-.") 'cscope-find-global-definition)
-;; ; Search for all symbol mentions (references and definitions), in case C-. and M-. jump to the wrong place
-;; (global-set-key (kbd "C-?") 'cscope-find-this-symbol)
-;; (global-set-key (kbd "C-,") 'cscope-find-this-text-string)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; General user config ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Highlight parens etc
-(show-paren-mode 1)
-(setq show-paren-delay 0)
 
 ;; C languages should use sane indentation (not GNU)
 (setq-default c-default-style "linux"
@@ -304,28 +311,6 @@
 
 (global-set-key [C-f3] 'git-grep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Godot GDScript mode ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; (require 'gdscript-mode)
-;; (setq gdscript-tabs-mode t)
-;; (setq gdscript-tab-width 4)
-
-;;;;;;;;;;;;;;;;;
-;; Dylan stuff ;;
-;;;;;;;;;;;;;;;;;
-
-(condition-case nil
-    (progn
-      (add-to-list 'load-path "~/.emacs.d/dylan-mode")
-      (require 'dime))
-  (error "Failed to load DIME"))
-
-;;;;;;;;;;;;;;;;;;
-;; Rust support ;;
-;;;;;;;;;;;;;;;;;;
-
 ;;;;;;;;;;;;;;;;;;;;;
 ;; Paredit & SLIME ;;
 ;;;;;;;;;;;;;;;;;;;;;
@@ -350,19 +335,12 @@
 ;; Python environment settings ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;(let ((virtual-env "/ws/wvanders-gpk/pyenv"))
-;;  (setenv "VIRTUAL_ENV" virtual-env)
-;;  (setenv "PATH" (concat virtual-env "/bin:" (getenv "PATH")))
-;;  (setenv "PYTHONHOME")) ;; Unset PYTHONHOME
-
-;;(setenv "PYTHONHOME" "~/.elpy-libraries/easy_install")
-
 (elpy-enable)
 (condition-case nil
     (if (file-exists-p "~/.elpy-virtualenv")
         (pyvenv-activate "~/.elpy-virtualenv")
       (warn "No virtualenv found at ~/.elpy-virtualenv"))
-  (error "Failed to init elpy virtualenv"))
+  (warn "Failed to init elpy virtualenv"))
 
 ;;;;;;;;;;;;;;;
 ;; Lua stuff ;;
@@ -371,77 +349,22 @@
 (require 'flymake-lua)
 (add-hook 'lua-mode-hook 'flymake-lua-load)
 
-;;;;;;;;;;;;;;;;;
-;; rtags setup ;;
-;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; C/C++ setup using cquery ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar rtags-speeddial-menu
-  (let ((menu (make-sparse-keymap "RTags speeddial")))
-    (define-key menu [rtags-speeddial-previous]       '("Previous match" . rtags-previous-match))
-    (define-key menu [rtags-speeddial-next]           '("Next match" . rtags-next-match))
-    (define-key menu [rtags-speeddial-separator2]     '(menu-item "--single-line"))
-    (define-key menu [rtags-speeddial-stack-forward]  '("Go forward" . rtags-location-stack-forward))
-    (define-key menu [rtags-speeddial-stack-back]     '("Go back" . rtags-location-stack-back))
-    (define-key menu [rtags-speeddial-separator1]     '(menu-item "--single-line"))
-    (define-key menu [rtags-speeddial-all-references] '("Find all references" . rtags-find-all-references-at-point))
-    (define-key menu [rtags-speeddial-references]     '("Find references" . rtags-find-references-at-point))
-    (define-key menu [rtags-speeddial-definition]     '("Find symbol" . rtags-find-symbol-at-point))
-    (define-key menu [rtags-speeddial-complete]       '("Auto complete" . company-complete))
-    menu))
+(setq cquery-executable "~/bin/cquery")
 
-(defun rtags-speeddial-menu-open ()
-    (interactive)
-    (popup-menu rtags-speeddial-menu))
+(defun cquery//enable ()
+  (condition-case nil
+      (lsp-cquery-enable)
+    (user-error nil)))
 
-(if (executable-find "rc")
-  (condition-case nil ; The following commands will fail if rtags is not installed.
-    (progn
-      (require 'rtags)
-      (require 'company)
-      (require 'flycheck-rtags)
+(add-hook 'c-mode-common-hook #'cquery//enable)
 
-      (setq rtags-autostart-diagnostics t)
-      (rtags-diagnostics)
-      (setq rtags-completions-enabled t)
-      (push 'company-rtags company-backends)
-      ;; (global-set-key (kbd "M-/") 'company-complete)
-      (defun my-flycheck-rtags-setup ()
-        (flycheck-select-checker 'rtags))
-      ;; c-mode-common-hook is also called by c++-mode
-      (add-hook 'c-mode-common-hook #'my-flycheck-rtags-setup)
-      (rtags-start-process-unless-running)
-      
-      (let ((maps (list c-mode-base-map c++-mode-map)))
-        (define-key-multimap maps (kbd "C-z") 'rtags-speeddial-menu-open)
-        (define-key-multimap maps (kbd "M-?") 'rtags-find-references-at-point) ; Search for references to current symbol
-        (define-key-multimap maps (kbd "M-.") 'rtags-find-symbol-at-point)     ; Search for symbol definition
-        (define-key-multimap maps (kbd "C-?") 'rtags-find-all-references-at-point) ; Search for all symbol mentions (references and definitions)
-        (define-key-multimap maps (kbd "M-n") 'rtags-next-match)               ; Up/down/next/previous in search results
-        (define-key-multimap maps (kbd "M-p") 'rtags-previous-match)
-        (define-key-multimap maps (kbd "M-f") 'rtags-location-stack-forward)
-        (define-key-multimap maps (kbd "M-b") 'rtags-location-stack-back)
-        (define-key-multimap maps (kbd "s-SPC") (function company-complete))
-        (define-key-multimap maps (kbd "M-SPC") (function company-complete)) ; Force company completion with M-space
-      ))
-  (error (message "rtags could not be initialized."))))
-
-;;;;;;;;;;;;;;;;;;
-;; ggtags setup ;;
-;;;;;;;;;;;;;;;;;;
-
-;; (add-hook 'c-mode-common-hook
-;;           (lambda ()
-;;             (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
-;;               (ggtags-mode 1))))
-
-;; (add-hook 'c-mode-hook (lambda () ggtags-mode 1))
-;; (add-hook 'c++-mode-hook (lambda () ggtags-mode 1))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; rust setup using racer ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(setq racer-rust-src-path "~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src")
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; rust setup using RLS ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Detect msys64 rustup install
 (if (file-exists-p (concat "C:\\Users\\" (user-login-name) "\\.cargo\\bin"))
@@ -450,13 +373,20 @@
               (concat
                "C:\\Users\\" (user-login-name) "\\.cargo\\bin" ";"
                (getenv "PATH")))
-      (setq racer-cmd (concat "C:\\Users\\" (user-login-name) "\\.cargo\\bin\\racer"))
-      (setq racer-rust-src-path (concat 
-               "C:\\Users\\" (user-login-name) "\\.rustup\\toolchains\\stable-x86_64-pc-windows-gnu\\lib\\rustlib\\src\\rust\\src"))))
+      ))
 
-(add-hook 'rust-mode-hook #'racer-mode)
-(add-hook 'racer-mode-hook #'eldoc-mode)
-(add-hook 'racer-mode-hook #'company-mode)
+(if (file-exists-p "~/.cargo/bin")
+    (progn
+      (setenv "PATH"
+              (concat
+               "~/.cargo/bin" ":"
+               (getenv "PATH")))
+      ))
+
+(with-eval-after-load 'lsp-mode
+  (setq lsp-rust-rls-command '("rustup" "run" "nightly" "rls"))
+  (require 'lsp-rust))
+(add-hook 'rust-mode-hook #'lsp-rust-enable)
 
 (setq my-cargo-args "")
 (defun cargo-args-prompt ()
@@ -483,47 +413,9 @@
 (setq company-idle-delay .3)
 (setq company-minimum-prefix-length 2)
 
-;;;;;;;;;;;;;
-;; Futhark ;;
-;;;;;;;;;;;;;
-
-(require 'futhark-mode)
-
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; MELPA over HTTPS ;;
 ;;;;;;;;;;;;;;;;;;;;;;
-
-;; (custom-set-variables
-;;  '(delete-selection-mode nil)
-;;  '(package-archives (quote (("gnu" . "https://elpa.gnu.org/packages/") ("melpa" . "https://melpa.org/packages/"))))
-;;  '(tls-checktrust t))
-
-;; If linked against GNU tls, these are used.
-;; (setq gnutls-verify-error t)
-;; (setq gnutls-trustfiles (directories-files
-;;                          '("/var/lib/ca-certificates/pem/" "/usr/ssl/") t "\\.pem$"))
-
-;; Using gnutls-cli if not linked against gnutls.
-;; (setq tls-program
-;;       (loop for cert-file in gnutls-trustfiles
-;;             collect (format "my-gnutls-cli%s --x509cafile %s -p %%p %%h"
-;;                             (if (eq window-system 'w32) ".exe" "") cert-file)))
-
-;; Validate if this config works
-;; (let ((bad-hosts
-;;        (loop for bad
-;;              in `("https://wrong.host.badssl.com/"
-;;                   "https://self-signed.badssl.com/")
-;;              if (condition-case e
-;;                     (url-retrieve
-;;                      bad (lambda (retrieved) t))
-;;                   (error nil))
-;;              collect bad)))
-;;   (if bad-hosts
-;;       (error (format "tls misconfigured; retrieved %s ok"
-;;                      bad-hosts))
-;;     (url-retrieve "https://badssl.com"
-;;                   (lambda (retrieved) t))))
 
 ;; Stop nagging about changes on VBox shares (timestamps issue)
 (defadvice ask-user-about-supersession-threat (around ask-user-about-supersession-threat-if-necessary)
@@ -621,13 +513,13 @@
 (menu-bar-mode -1)
 (load-theme 'eziam-dusk t)
 (setq-default frame-title-format "%b (%f)")
+(setq rust-format-on-save t)
 (global-company-mode)
+(global-linum-mode)
+(global-eldoc-mode)
+(global-flycheck-mode)
+(global-highlight-parentheses-mode)
+(lsp-mode)
 
 ;; Scaler specific config
 (load "~/.emacs.d/scripts/scaler.el")
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
