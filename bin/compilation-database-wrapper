@@ -1,0 +1,24 @@
+#!/bin/bash
+#set -x
+CMD="$0"
+CMD_="$(basename "$0")"
+
+NEXT_IN_LINE=$(which -a ${CMD_} | grep -v "^${CMD}$" | head -n1)
+
+GIT_ROOT=$(git-inroot pwd)
+PROJECT_ROOT="${PWD}"
+
+if [[ "$GIT_ROOT" != "/" ]]; then
+	PROJECT_ROOT="${GIT_ROOT}"
+fi
+
+if [[ -z "$NEXT_IN_LINE" ]] || [[ "$CMD" == "$NEXT_IN_LINE" ]]; then
+	echo No other command found for $CMD_
+	exit 127
+fi
+
+COMPILATION_LOG="${PROJECT_ROOT}/.compile_commands.log"
+
+flock -x -w 5 "${COMPILATION_LOG}" echo ${PWD} /// ${CMD_} ${@} >> $COMPILATION_LOG || { echo "Failed to lock ${COMPILATION_LOG}, compilation command will not be added to the database."; }
+
+${NEXT_IN_LINE} "${@}"

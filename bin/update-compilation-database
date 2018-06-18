@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+# A wrapper for "old" Makefile projects to generate a clang compilation_database.json file.
+# Used for libclang-based code indexers/source browsers.
+
+require 'json'
+
+LOG_FILENAME=".compile_commands.log"
+LOG_SEPARATOR=" /// "
+SEPARATORS = /[&;|<>]+/
+
+def process_command(line, database)
+  workdir, cmd = line.split(LOG_SEPARATOR)
+  if cmd =~ SEPARATORS
+    cmd.split(SEPARATORS).each { |component_cmd| process_command("#{workdir}#{LOG_SEPARATOR}#{component_cmd}", database) }
+  else
+    main_object = cmd[/[^\s]+\.(cpp|cc|c)/]
+    if main_object.nil?
+      #puts "Warning: failed to find main compilation object for '#{cmd}', ignoring."
+      return
+    end
+
+    database[ [workdir, main_object] ] = cmd
+  end
+end
+
+project_root = Dir.pwd
+tried_roots = [project_root]
+until File.exists?("#{project_root}/#{LOG_FILENAME}") || project_root == "/"
+  project_root = File.dirname(project_root)
+  tried_roots << project_root
+end
+
+compilation_log = "#{project_root}/#{LOG_FILENAME}"
+if File.exists? compilation_log
+  puts "Using #{compilation_log} for new compilation commands."
+else
+  $stderr.puts "Failed to find .compile_commands.log anywhere in #{tried_roots.join(', ')}. Giving up."
+  exit 1
+end
+
+compilation_database="#{project_root}/compile_commands.json"
+old_database = []
+if File.exists? compilation_database
+  old_database = JSON::parse(File.read(compilation_database))
+end
+
+new_database = {}
+old_database.each do |entry|
+  new_database[ [entry['directory'], entry['file']] ] = entry['command']
+end
+
+File.readlines(compilation_log).each do |line|
+  process_command(line, new_database)
+end
+
+flat_database = []
+new_database.each do |key, value|
+  flat_database << { 'directory' => key[0], 'file' => key[1], 'command' => value }
+end
+
+puts "Writing #{flat_database.length} compilation commands to #{compilation_database}"
+File.open(compilation_database, 'w') { |f| f.print flat_database.to_json }
