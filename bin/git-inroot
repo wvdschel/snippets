@@ -7,7 +7,7 @@
 ORIG_DIR="${PWD}"
 
 SUBMODULE=0
-if [ $1 == -S ]; then
+if [ "$1" == -S ]; then
     shift
     SUBMODULE=1
 fi
@@ -22,7 +22,7 @@ else
     done
 fi
 
-if ! [ -d .git ] && ( ! [ -f .git ] && [ $SUBMODULE != 0 ); then
+if ! [ -d .git ] && ( ! [ -f .git ] && [ $SUBMODULE != 0 ] ); then
     echo "Error: no git repository found containing ${ORIG_DIR}."
     cd "${ORIG_DIR}"
     exit 1
