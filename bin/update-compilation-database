@@ -58,5 +58,24 @@ new_database.each do |key, value|
   flat_database << { 'directory' => key[0], 'file' => key[1], 'command' => value }
 end
 
+path_translations = []
+if File.exists? "#{project_root}/.compile_commands.paths"
+  path_translation_dict = JSON::parse(File.read("#{project_root}/.compile_commands.paths"))
+  path_translation_dict.each do |key, value|
+    path_translations << [key, value]
+  end
+  path_translations.sort_by! { |e| -e[0].length }
+end
+
+# TODO: translate file + directory combinations
+flat_database.map do |compilation_entry|
+  path_translations.each do |from, to|
+    if compilation_entry['directory'].start_with? from
+      compilation_entry['directory'].sub!(from, File.expand_path(to))
+      break
+    end
+  end
+end
+
 puts "Writing #{flat_database.length} compilation commands to #{compilation_database}"
 File.open(compilation_database, 'w') { |f| f.print flat_database.to_json }
