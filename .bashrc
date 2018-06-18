@@ -1,8 +1,9 @@
 # Customized PS1 prompt
 PS_NORMAL="[\u@\h \w]"
 prompt() {
-    LAST_EXIT_STRING="$(if [[ $? == 0 ]]; then echo -en "\[\033[0;32m\]\xE2\x9C\x94"; else echo -en "\[\033[0;31m\]\xE2\x9C\x95"; fi; echo -en "\[\033[0;0m\]")"
-    notify_done
+    EXIT_CODE=$?
+    LAST_EXIT_STRING="$(if [[ $EXIT_CODE == 0 ]]; then echo -en "\[\033[0;32m\]\xE2\x9C\x94"; else echo -en "\[\033[0;31m\]\xE2\x9C\x95"; fi; echo -en "\[\033[0;0m\]")"
+    notify_done $EXIT_CODE
     # Set current working directory as terminal title
     echo -ne "\033]0;${PWD/${HOME}/~}\007"
     if [ -z $DCM_IP ]; then
@@ -60,7 +61,8 @@ trap 'preexec_invoke_exec' DEBUG
 
 function notify_done()
 {
-    local LASTCMD=`HISTTIMEFORMAT= history 1 | sed -e "s/^[ ]*[0-9]*[ ]*//"`;
+    local EXIT_CODE=$1
+    local LAST_CMD=`HISTTIMEFORMAT= history 1 | sed -e "s/^[ ]*[0-9]*[ ]*//"`;
     local TIME=$(date +%s)
     local PLAY=$(which play)
     local NOTIFY=$(which notify-send)
@@ -70,7 +72,11 @@ function notify_done()
 	if ! [ -z $PLAY ]; then
             (for i in {1..2}; do $PLAY -qn synth 1 sine D fade q 0.1 0.2 0.1; done &)
 	fi
-        $NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -c transfer.complete "Command finished" "$LASTCMD"
+        if [ $EXIT_CODE -eq 0 ]; then
+            $NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -c transfer.complete "Command finished" "$LAST_CMD"
+        else
+            $NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -i error -c transfer.complete "Command failed ($EXIT_CODE)" "$LAST_CMD"
+        fi
     fi
     unset START_TIME
 }
@@ -86,7 +92,7 @@ alias syncup=~/Unison/sync.sh
 PROMPT_COMMAND=prompt
 
 # On OpenSUSE, sbin is not part of PATH by default
-export PATH=$PATH:/sbin:/usr/sbin
-export NDK_HOME=~/Apps/android-ndk-r12b
-export ANDROID_HOME=~/Apps/android-sdk-linux
-export PATH=$ANDROID_HOME/tools:$PATH
+#export PATH=$PATH:/sbin:/usr/sbin
+#export NDK_HOME=~/Apps/android-ndk-r12b
+#export ANDROID_HOME=~/Apps/android-sdk-linux
+#export PATH=$ANDROID_HOME/tools:$PATH
