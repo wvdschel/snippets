@@ -16,7 +16,7 @@
  '(delete-selection-mode nil)
  '(package-selected-packages
    (quote
-    (toml-mode slime paredit lsp-rust love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua company-lsp cmake-mode cargo))))
+    (go-eldoc go-mode lsp-go toml-mode slime paredit lsp-rust love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua company-lsp cmake-mode cargo))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -33,24 +33,6 @@
 
 (if (file-exists-p "~/.emacs.d/proxyconfig.el")
     (load "~/.emacs.d/proxyconfig.el"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; This makes emacs find all the required binaries and libraries I compiled myself. ;;
-;; (Cisco Aurora specific)                                                          ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(if (file-exists-p "/home/wvanders/pkgs/bin")
-    (progn
-      (setenv "PATH"
-              (concat
-               "/home/wvanders/pkgs/bin" ":"
-               (getenv "PATH"))))
-  
-  (setenv "LD_LIBRARY_PATH"
-          (concat
-           "/home/wvanders/pkgs/lib" ":"
-           "/home/wvanders/pkgs/lib64" ":"
-           (getenv "LD_LIBRARY_PATH"))))
 
 ;; Use MingW64 if available
 
@@ -127,6 +109,8 @@
                      lsp-mode company-lsp
                      ;; Python
                      elpy
+                     ;; Go
+                     lsp-go go-mode go-eldoc
                      ;; LISP
                      paredit pkg-info slime
                      ;; Lua
@@ -134,7 +118,7 @@
                      ;; Rugst
                      cargo lsp-rust
                      ;; C/C++
-                     cquery
+                     cquery ;; lsp-clangd
 		     ;; Various quality of life plugins
 		     highlight-symbol highlight-parentheses eziam-theme)))
 
@@ -163,6 +147,22 @@
 ;; Get the active buffer
 (defun active-buffer ()
   (window-buffer (active-window)))
+
+;; Strip newline off the end of a string
+(defun chomp (str)
+    (if (and (> (length str) 0)
+             (string= (substring str -1 nil) "\n"))
+        (chomp (substring str 0 -1))
+      str))
+
+;; Add a path to exec-path if the directory exists & is not already in exec-path
+(defun extend-path (dir)
+  (if (and (file-exists-p dir) (not (member dir exec-path)))
+      (progn
+        (add-to-list 'exec-path dir)
+        (message "Added %s to exec-path" dir))
+      (message "Not adding %s to exec-path: exists = %s and member = %s"
+               dir (file-exists-p dir)(member dir exec-path))))
 
 ;;;;;;;;;;;;;;
 ;; Speedbar ;;
@@ -239,27 +239,6 @@
 (global-set-key [f3] 'highlight-symbol-next)
 (global-set-key [(shift f3)] 'highlight-symbol-prev)
 (global-set-key [(shift meta f3)] 'highlight-symbol-query-replace)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;; General user config ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; C languages should use sane indentation (not GNU)
-(setq-default c-default-style "linux"
-                    c-basic-offset 2
-                          tab-width 8
-                                indent-tabs-mode nil)
-
-(defun my-c-mode-hook ()
-    (c-set-offset 'innamespace [0])
-;;  (c-set-offset 'statement-case-open '+)
-    (c-set-offset 'case-label '+))
-
-(add-hook 'c-mode-hook 'my-c-mode-hook)
-(add-hook 'c++-mode-hook 'my-c-mode-hook)
-
-;; Automatically guess C-style indentation
-;;(require 'guess-offset)
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;; Building config ;;
@@ -349,45 +328,81 @@
 (require 'flymake-lua)
 (add-hook 'lua-mode-hook 'flymake-lua-load)
 
+;;;;;;;;;;;;
+;; Golang ;;
+;;;;;;;;;;;;
+
+(extend-path (concat (getenv "HOME") "/go/bin"))
+
+(with-eval-after-load 'lsp-mode
+  (require 'lsp-go))
+(add-hook 'go-mode-hook #'lsp-go-enable)
+(add-hook 'before-save-hook #'gofmt-before-save)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; C/C++ setup using cquery ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(setq cquery-executable "~/bin/cquery")
+;; (setq cquery-executable "~/bin/cquery")
 
-(defun cquery//enable ()
-  (condition-case nil
-      (lsp-cquery-enable)
-    (user-error nil)))
+;; (defun cquery//enable ()
+;;   (condition-case nil
+;;       (lsp-cquery-enable)
+;;     (user-error nil)))
 
-(add-hook 'c-mode-common-hook #'cquery//enable)
+;; (add-hook 'c-mode-common-hook #'cquery//enable)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; C/C++ setup using clangd ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(with-eval-after-load 'lsp-mode
+  (require 'lsp-clangd))
+(add-hook 'c-mode--hook #'lsp-clangd-c-enable)
+(add-hook 'c++-mode-hook #'lsp-clangd-c++-enable)
+(add-hook 'objc-mode-hook #'lsp-clangd-objc-enable)
+
+;; C languages should use sane indentation (not GNU)
+(setq-default c-default-style "linux"
+              c-basic-offset 2
+              tab-width 8
+              indent-tabs-mode nil)
+
+(defun my-c-mode-hook ()
+    (c-set-offset 'innamespace [0])
+;;  (c-set-offset 'statement-case-open '+)
+    (c-set-offset 'case-label '+))
+
+(add-hook 'c-mode-hook 'my-c-mode-hook)
+(add-hook 'c++-mode-hook 'my-c-mode-hook)
+
+;; Automatically guess C-style indentation
+;;(require 'guess-offset)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; rust setup using RLS ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Detect msys64 rustup install
-(if (file-exists-p (concat "C:\\Users\\" (user-login-name) "\\.cargo\\bin"))
-    (progn
-      (setenv "PATH"
-              (concat
-               "C:\\Users\\" (user-login-name) "\\.cargo\\bin" ";"
-               (getenv "PATH")))
-      ))
+(let ((cargo-bin-dir (concat "C:\\Users\\" (user-login-name) "\\.cargo\\bin")))
+  (if (file-exists-p cargo-bin-dir)
+      (progn
+        (extend-path cargo-bin-dir)
+        (setenv "PATH"
+                (concat
+                 cargo-bin-dir
+                 (getenv "PATH"))))))
 
-(if (file-exists-p "~/.cargo/bin")
-    (progn
-      (setenv "PATH"
-              (concat
-               "~/.cargo/bin" ":"
-               (getenv "PATH")))
-      ))
+(extend-path (concat (getenv "HOME") "/.cargo/bin"))
 
-(with-eval-after-load 'lsp-mode
-  (setq lsp-rust-rls-command '("rustup" "run" "nightly" "rls"))
-  (require 'lsp-rust))
-(add-hook 'rust-mode-hook #'lsp-rust-enable)
-
+(let ((rustup-default-channel (chomp (shell-command-to-string "rustup show | grep '(default)$' | cut -d'-' -f1")))
+      (rustup-full-path (chomp (shell-command-to-string "which rustup"))))
+  (message (concat "Setting up lsp-rust with " rustup-full-path " and using channel " rustup-default-channel))
+  (setq lsp-rust-rls-command (list rustup-full-path "run" rustup-default-channel "rls"))
+  (with-eval-after-load 'lsp-mode
+    (require 'lsp-rust))
+  (add-hook 'rust-mode-hook #'lsp-rust-enable))
+  
 (setq my-cargo-args "")
 (defun cargo-args-prompt ()
   "Run cargo build after modifying the arguments to the command."
@@ -400,7 +415,6 @@
   (setq cargo-process--command-clippy (concat "clippy " my-cargo-args)))
 
 (require 'rust-mode)
-(define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
 ;(define-key toml-mode-map [f5] #'cargo-process-build)
 ;(define-key toml-mode-map [(shift f5)] #'cargo-process-run)
 (define-key rust-mode-map [f5] #'cargo-process-build)
@@ -408,54 +422,6 @@
 (define-key rust-mode-map [f6] #'cargo-process-run)
 (define-key rust-mode-map [f7] #'cargo-process-clippy)
 (define-key rust-mode-map [f8] #'cargo-process-check)
-(setq company-tooltip-align-annotations t)
-
-(setq company-idle-delay .3)
-(setq company-minimum-prefix-length 2)
-
-;;;;;;;;;;;;;;;;;;;;;;
-;; MELPA over HTTPS ;;
-;;;;;;;;;;;;;;;;;;;;;;
-
-;; Stop nagging about changes on VBox shares (timestamps issue)
-(defadvice ask-user-about-supersession-threat (around ask-user-about-supersession-threat-if-necessary)
-  "Call ask-user-about-supersession-threat only if the buffer is actually obsolete."
-  (if (or (buffer-modified-p)
-          (verify-visited-file-modtime)
-          (< (* 8 1024 1024) (buffer-size))
-          (/= 0 (call-process-region 1 (+ 1 (buffer-size)) "diff" nil nil nil "-q" (buffer-file-name) "-")))
-      ad-do-it
-    (clear-visited-file-modtime)
-    (not-modified)))
-(ad-activate 'ask-user-about-supersession-threat)
-
-;; On CentOS, the buffer doesn't always draw correctly, and text becomes invisible.
-;; This defines a keyboard shortcut to force a redraw
-(global-set-key [f4] 'redraw-display)
-
-;; (lush-theme)
-
-
-;; Terminal keycodes (because GNU screen and GNU emacs don't agree on keycodes & terminal capabilities)
-(add-hook 'term-setup-hook
-  '(lambda ()
-     ; \e[1;5[ABCD] is C-arrow
-     (define-key function-key-map "\e[1;5A" [C-up])
-     (define-key function-key-map "\e[1;5B" [C-down])
-     (define-key function-key-map "\e[1;5C" [C-right])
-     (define-key function-key-map "\e[1;5D" [C-left])
-     ; \e[1;2[ABCD] is shift-arrow
-     (define-key function-key-map "\e[1;2A" [(shift up)])
-     (define-key function-key-map "\e[1;2B" [(shift down)])
-     (define-key function-key-map "\e[1;2C" [(shift right)])
-     (define-key function-key-map "\e[1;2D" [(shift left)])
-     ; \e[1;3[ABCD] is M-arrow
-     (define-key function-key-map "\e[1;3A" [M-up])
-     (define-key function-key-map "\e[1;3B" [M-down])
-     (define-key function-key-map "\e[1;3C" [M-right])
-     (define-key function-key-map "\e[1;3D" [M-left])))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Switch between buffers in alphabetical order ;;
@@ -506,20 +472,71 @@
 (global-set-key (kbd "<M-next>") 'my-next-buffer)
 (global-set-key (kbd "<M-prior>") 'my-prev-buffer)
 
+
+
+;;;;;;;;;;;;;;;;;;;;
+;; General config ;;
+;;;;;;;;;;;;;;;;;;;;
+
+;; Stop nagging about changes on VBox shares (timestamps issue)
+(defadvice ask-user-about-supersession-threat (around ask-user-about-supersession-threat-if-necessary)
+  "Call ask-user-about-supersession-threat only if the buffer is actually obsolete."
+  (if (or (buffer-modified-p)
+          (verify-visited-file-modtime)
+          (< (* 8 1024 1024) (buffer-size))
+          (/= 0 (call-process-region 1 (+ 1 (buffer-size)) "diff" nil nil nil "-q" (buffer-file-name) "-")))
+      ad-do-it
+    (clear-visited-file-modtime)
+    (not-modified)))
+(ad-activate 'ask-user-about-supersession-threat)
+
+;; On CentOS, the buffer doesn't always draw correctly, and text becomes invisible.
+;; This defines a keyboard shortcut to force a redraw
+;; (global-set-key [f4] 'redraw-display)
+
+;; Terminal keycodes (because GNU screen and GNU emacs don't agree on keycodes & terminal capabilities)
+(add-hook 'term-setup-hook
+  '(lambda ()
+     ; \e[1;5[ABCD] is C-arrow
+     (define-key function-key-map "\e[1;5A" [C-up])
+     (define-key function-key-map "\e[1;5B" [C-down])
+     (define-key function-key-map "\e[1;5C" [C-right])
+     (define-key function-key-map "\e[1;5D" [C-left])
+     ; \e[1;2[ABCD] is shift-arrow
+     (define-key function-key-map "\e[1;2A" [(shift up)])
+     (define-key function-key-map "\e[1;2B" [(shift down)])
+     (define-key function-key-map "\e[1;2C" [(shift right)])
+     (define-key function-key-map "\e[1;2D" [(shift left)])
+     ; \e[1;3[ABCD] is M-arrow
+     (define-key function-key-map "\e[1;3A" [M-up])
+     (define-key function-key-map "\e[1;3B" [M-down])
+     (define-key function-key-map "\e[1;3C" [M-right])
+     (define-key function-key-map "\e[1;3D" [M-left])))
+
 ;; Start emacs server to allow opening files in this session from the command line
 (server-start)
 
 (tool-bar-mode -1)
 (menu-bar-mode -1)
-(load-theme 'eziam-dusk t)
+(load-theme 'dracula t)
+;; (load-theme 'eziam-dusk t)
 (setq-default frame-title-format "%b (%f)")
 (setq rust-format-on-save t)
 (global-company-mode)
+(global-set-key (kbd "TAB") #'company-indent-or-complete-common)
+(setq company-tooltip-align-annotations t)
+(setq company-idle-delay 9000000)
+(setq company-minimum-prefix-length 2)
 (global-linum-mode)
 (global-eldoc-mode)
 (global-flycheck-mode)
 (global-highlight-parentheses-mode)
 (lsp-mode)
+
+;; Add all system path directories to emacs' exec-path
+(dolist (dir (split-string (getenv "PATH") path-separator) nil)
+  (extend-path dir))
+
 
 ;; Scaler specific config
 (load "~/.emacs.d/scripts/scaler.el")
