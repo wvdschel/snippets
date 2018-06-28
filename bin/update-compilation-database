@@ -67,7 +67,9 @@ if File.exists? "#{project_root}/.compile_commands.paths"
   path_translations.sort_by! { |e| -e[0].length }
 end
 
-# TODO: translate file + directory combinations
+# This is a dirty hack to translate paths which are volume mounted inside
+# a docker container used for building.
+# TODO: translate file + directory combinations & inside commands
 flat_database.map do |compilation_entry|
   path_translations.each do |from, to|
     if compilation_entry['directory'].start_with? from
