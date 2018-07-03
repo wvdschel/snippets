@@ -160,9 +160,7 @@
   (if (and (file-exists-p dir) (not (member dir exec-path)))
       (progn
         (add-to-list 'exec-path dir)
-        (message "Added %s to exec-path" dir))
-      (message "Not adding %s to exec-path: exists = %s and member = %s"
-               dir (file-exists-p dir)(member dir exec-path))))
+        (message "Added %s to exec-path" dir))))
 
 ;;;;;;;;;;;;;;
 ;; Speedbar ;;
