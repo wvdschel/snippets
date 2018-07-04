@@ -1,0 +1,10 @@
+#!/bin/bash
+
+PID=$$
+PARENTPID=$(ps -o ppid= -p $PID)
+SELFPROC=$0
+SELFPROC=$(basename $0)
+PIDS=$(ps | egrep -v "(CMD|ps|grep|cut|sed|$SELFPROC)$" | sed 's/^ *//' | cut -d' ' -f1 | egrep -v "^($PARENTPID|$PID|$$)$")
+if ! [ -z "$PIDS" ]; then
+	kill $@ $PIDS
+fi
