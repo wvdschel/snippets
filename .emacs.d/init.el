@@ -118,7 +118,7 @@
                      ;; Rugst
                      cargo lsp-rust
                      ;; C/C++
-                     cquery ;; lsp-clangd
+                     cquery ; lsp-clangd
 		     ;; Various quality of life plugins
 		     highlight-symbol highlight-parentheses eziam-theme)))
 
