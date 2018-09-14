@@ -272,7 +272,7 @@
 
 (defun git-grep (search)
   "git grep through the repository."
-  (interactive (list (read-from-minibuffer "Search for: " nil nil nil (current-word))))
+  (interactive (list (read-from-minibuffer "Search for: " (current-word))))
   (let ((current-file-dir (parent-directory (expand-file-name (buffer-file-name))))
         (current-dir      (getenv "PWD")))
     (let ((git-top-dir      (find-dir-containing current-file-dir ".git")))
