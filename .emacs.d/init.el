@@ -16,7 +16,7 @@
  '(delete-selection-mode nil)
  '(package-selected-packages
    (quote
-    (go-eldoc go-mode lsp-go toml-mode slime paredit lsp-rust love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua company-lsp cmake-mode cargo))))
+    (use-package dracula-theme dracula-them projectile lsp-clangd olivetti go-eldoc go-mode lsp-go toml-mode slime paredit lsp-rust love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua company-lsp cmake-mode cargo))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -118,9 +118,10 @@
                      ;; Rugst
                      cargo lsp-rust
                      ;; C/C++
-                     cquery ; lsp-clangd
+                     lsp-clangd cquery
 		     ;; Various quality of life plugins
-		     highlight-symbol highlight-parentheses eziam-theme)))
+		     highlight-symbol highlight-parentheses
+		     eziam-theme dracula-theme use-package)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -341,28 +342,40 @@
 ;; C/C++ setup using cquery ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (setq cquery-executable "~/bin/cquery")
+(with-eval-after-load 'projectile
+  (setq projectile-project-root-files-top-down-recurring
+        (append '("compile_commands.json"
+                  ".cquery")
+                projectile-project-root-files-top-down-recurring)))
 
-;; (defun cquery//enable ()
-;;   (condition-case nil
-;;       (lsp-cquery-enable)
-;;     (user-error nil)))
+(setq company-transformers nil company-lsp-async t company-lsp-cache-candidates nil)
+(setq cquery-extra-init-params '(:completion (:detailedLabel t)))
+(setq cquery-executable "~/bin/cquery")
 
-;; (add-hook 'c-mode-common-hook #'cquery//enable)
+(defun cquery-enable-hook ()
+  (message (concat "Enabling cquery for buffer " (buffer-name)))
+  (condition-case nil
+      (lsp-cquery-enable)
+    (user-error nil)))
+
+(use-package cquery
+	     :commands lsp-cquery-enable
+	     :init (add-hook 'c-mode-hook #'cquery-enable-hook)
+	     (add-hook 'c++-mode-hook #'cquery-enable-hook))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; C/C++ setup using clangd ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(with-eval-after-load 'lsp-mode
-  (require 'lsp-clangd))
-(add-hook 'c-mode--hook #'lsp-clangd-c-enable)
-(add-hook 'c++-mode-hook #'lsp-clangd-c++-enable)
-(add-hook 'objc-mode-hook #'lsp-clangd-objc-enable)
+;; (with-eval-after-load 'lsp-mode
+;;   (require 'lsp-clangd))
+;; (add-hook 'c-mode--hook #'lsp-clangd-c-enable)
+;; (add-hook 'c++-mode-hook #'lsp-clangd-c++-enable)
+;; (add-hook 'objc-mode-hook #'lsp-clangd-objc-enable)
 
 ;; C languages should use sane indentation (not GNU)
 (setq-default c-default-style "linux"
-              c-basic-offset 2
+              c-basic-offset 4
               tab-width 8
               indent-tabs-mode nil)
 
