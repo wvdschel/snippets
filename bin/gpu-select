@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -e
+
+# Disable or enable Nvidia graphics.
+# gpu-select nvidia enables nvidia graphics, gpu-select intel disables them.
+# If no arguments are provided, it checks the Xorg configuration and powers
+# the nvidia graphics up or down depending on the active configuration.
+
+if [[ $UID != 0 ]]; then
+	sudo $0 ${@}
+	exit $?
+fi
+
+if [[ $# -gt 0 ]]; then
+	if [[ "$1" == nvidia ]]; then
+		if ! [ -f /etc/X11/xorg.conf.d/20-nvidia.conf ]; then
+			echo Enabling Nvidia Xorg configuration
+			mv /etc/X11/xorg.conf.d/20-nvidia.conf.disabled /etc/X11/xorg.conf.d/20-nvidia.conf
+		fi
+		if [ -f /etc/X11/xorg.conf.d/20-intel.conf ]; then
+			echo Disabling Intel Xorg configuration
+			mv /etc/X11/xorg.conf.d/20-intel.conf /etc/X11/xorg.conf.d/20-intel.conf.disabled
+		fi
+
+	else
+		if ! [ -f /etc/X11/xorg.conf.d/20-intel.conf ]; then
+			echo Enabling Intel Xorg configuration
+			mv /etc/X11/xorg.conf.d/20-intel.conf.disabled /etc/X11/xorg.conf.d/20-intel.conf
+		fi
+
+		if [ -f /etc/X11/xorg.conf.d/20-nvidia.conf ]; then
+			echo Disabling Nvidia Xorg configuration
+			mv /etc/X11/xorg.conf.d/20-nvidia.conf /etc/X11/xorg.conf.d/20-nvidia.conf.disabled
+		fi
+	fi
+fi
+
+if [ -f /etc/X11/xorg.conf.d/20-nvidia.conf ]; then
+	NVIDIA_ON=1
+else
+	NVIDIA_ON=0
+fi
+
+if [[ ${NVIDIA_ON} == 1 ]]; then
+	echo Turning on Nvidia graphics
+	echo ON > /proc/acpi/bbswitch
+	modprobe nvidia-drm
+else
+	echo Powering down Nvidia graphics
+	rmmod nvidia_drm nvidia_modeset nvidia
+	echo OFF > /proc/acpi/bbswitch
+fi
