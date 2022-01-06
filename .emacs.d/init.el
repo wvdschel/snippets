@@ -16,7 +16,7 @@
  '(delete-selection-mode nil)
  '(package-selected-packages
    (quote
-    (use-package dracula-theme dracula-them projectile lsp-clangd olivetti go-eldoc go-mode lsp-go toml-mode slime paredit lsp-rust love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua company-lsp cmake-mode cargo))))
+    (lsp-java use-package dracula-theme dracula-them projectile olivetti go-eldoc go-mode toml-mode slime paredit love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua cmake-mode cargo))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -101,24 +101,25 @@
           (unless (package-installed-p pkg) (package-install pkg)))
         '(
           ;; Non-default language support
-          cmake-mode rust-mode toml-mode lua-mode love-minor-mode
-                     futhark-mode
+          cmake-mode rust-mode toml-mode lua-mode
                      ;; General emacs frameworks
                      company dash flycheck
                      ;; Language server protocol support
-                     lsp-mode company-lsp
+                     lsp-mode lsp-ui
                      ;; Python
                      elpy
                      ;; Go
-                     lsp-go go-mode go-eldoc
+                     go-mode go-eldoc
                      ;; LISP
                      paredit pkg-info slime
                      ;; Lua
                      flymake-lua company-lua
-                     ;; Rugst
-                     cargo lsp-rust
+                     ;; Java
+                     lsp-java
+                     ;; Rust
+                     cargo
                      ;; C/C++
-                     lsp-clangd cquery
+                     cquery
 		     ;; Various quality of life plugins
 		     highlight-symbol highlight-parentheses
 		     eziam-theme dracula-theme use-package)))
@@ -333,10 +334,15 @@
 
 (extend-path (concat (getenv "HOME") "/go/bin"))
 
-(with-eval-after-load 'lsp-mode
-  (require 'lsp-go))
-(add-hook 'go-mode-hook #'lsp-go-enable)
+(add-hook 'go-mode-hook #'lsp)
 (add-hook 'before-save-hook #'gofmt-before-save)
+
+;;;;;;;;;;
+;; Java ;;
+;;;;;;;;;;
+
+(require 'lsp-java)
+(add-hook 'java-mode-hook #'lsp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; C/C++ setup using cquery ;;
@@ -410,9 +416,7 @@
       (rustup-full-path (chomp (shell-command-to-string "which rustup"))))
   (message (concat "Setting up lsp-rust with " rustup-full-path " and using channel " rustup-default-channel))
   (setq lsp-rust-rls-command (list rustup-full-path "run" rustup-default-channel "rls"))
-  (with-eval-after-load 'lsp-mode
-    (require 'lsp-rust))
-  (add-hook 'rust-mode-hook #'lsp-rust-enable))
+  (add-hook 'rust-mode-hook #'lsp))
   
 (setq my-cargo-args "")
 (defun cargo-args-prompt ()
@@ -542,12 +546,8 @@
 (global-eldoc-mode)
 (global-flycheck-mode)
 (global-highlight-parentheses-mode)
-(lsp-mode)
 
 ;; Add all system path directories to emacs' exec-path
 (dolist (dir (split-string (getenv "PATH") path-separator) nil)
   (extend-path dir))
 
-
-;; Scaler specific config
-(load "~/.emacs.d/scripts/scaler.el")
