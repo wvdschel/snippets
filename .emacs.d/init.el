@@ -14,6 +14,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(delete-selection-mode nil)
+ '(lsp-java-java-path "java11")
  '(package-selected-packages
    (quote
     (lsp-java use-package dracula-theme dracula-them projectile olivetti go-eldoc go-mode toml-mode slime paredit love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua cmake-mode cargo))))
@@ -341,6 +342,7 @@
 ;; Java ;;
 ;;;;;;;;;;
 
+;;(setenv "JAVA_HOME" "/usr/lib/jvm/java-11-openjdk-amd64/")
 (require 'lsp-java)
 (add-hook 'java-mode-hook #'lsp)
 
