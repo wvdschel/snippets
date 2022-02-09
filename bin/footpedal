@@ -1,14 +1,14 @@
 #!/bin/bash
 PEDAL_NAME="GZIOT USBSW"
 if ! xinput | grep -qi "$PEDAL_NAME"; then
-	echo No touchscreen found, nothing to disable
+	echo No pedal found to remap
 	exit 0
 fi
 
 mkdir -p /tmp/xkb/symbols
 cat >/tmp/xkb/symbols/custom <<\EOF
 
-xkb_symbols "remote" {
+xkb_symbols "pedal" {
 	key <RTRN> { [ F15 ] };
 };
 EOF
@@ -17,6 +17,5 @@ XID=$(xinput | grep -i "$PEDAL_NAME" | sed -re 's/.*id=([0-9]+)\s.*/\1/')
 for device_id in $XID; do
 	echo $device
 	setxkbmap -device $device_id -print \
-		| sed 's/\(xkb_symbols.*\)"/\1+custom(remote)"/' \
-		| xkbcomp -I/tmp/xkb -i $device_id -synch - $DISPLAY 2>/dev/null
+		| sed 's/\(xkb_symbols.*\)"/\1+custom(pedal)"/'	| xkbcomp -I/tmp/xkb -i $device_id -synch - $DISPLAY
 done
