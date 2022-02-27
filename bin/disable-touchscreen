@@ -1,9 +1,10 @@
 #!/bin/bash
-if ! xinput | grep -qi touchscreen; then
+PATTERN='touchscreen|finger'
+if ! xinput | egrep -qi $PATTERN; then
 	echo No touchscreen found, nothing to disable
 	exit 0
 fi
 
-XID=$(xinput | grep -i touchscreen | sed -re 's/.*id=([0-9]+)\s.*/\1/')
+XID=$(xinput | egrep -i $PATTERN | sed -re 's/.*id=([0-9]+)\s.*/\1/')
 echo Disabling xinput device $XID
 xinput disable $XID
