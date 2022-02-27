@@ -1,0 +1,21 @@
+#!/bin/bash
+USB_DEV=2717:ff40
+ADB_DEV=fedf9dea
+LOCK_CMD="gnome-screensaver-command --lock"
+UNLOCK_CMD="gnome-screensaver-command -d"
+
+function check_phone() {
+	#lsusb | grep -q $USB_DEV
+	adb devices | grep -q $ADB_DEV
+}
+
+while true; do
+	while ! (check_phone); do
+		sleep 0.1
+	done
+	$UNLOCK_CMD
+	while (check_phone); do
+		sleep 0.1
+	done
+	$LOCK_CMD
+done
