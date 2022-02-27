@@ -3,6 +3,7 @@
 # Used for libclang-based code indexers/source browsers.
 
 require 'json'
+require 'shellwords'
 
 LOG_FILENAME=".compile_commands.log"
 LOG_SEPARATOR=" /// "
@@ -13,13 +14,10 @@ def process_command(line, database)
   if cmd =~ SEPARATORS
     cmd.split(SEPARATORS).each { |component_cmd| process_command("#{workdir}#{LOG_SEPARATOR}#{component_cmd}", database) }
   else
-    main_object = cmd[/[^\s]+\.(cpp|cc|c)/]
-    if main_object.nil?
-      #puts "Warning: failed to find main compilation object for '#{cmd}', ignoring."
-      return
+    args = Shellwords.shellwords(cmd)
+    args.select { |a| a =~ /\.(cpp|cc|c)$/ }.each do |main_object|
+      database[ [workdir, main_object] ] = cmd
     end
-
-    database[ [workdir, main_object] ] = cmd
   end
 end
 
@@ -72,12 +70,11 @@ end
 # TODO: translate file + directory combinations & inside commands
 flat_database.map do |compilation_entry|
   path_translations.each do |from, to|
-    if compilation_entry['directory'].start_with? from
-      compilation_entry['directory'].sub!(from, File.expand_path(to))
-      break
-    end
+    compilation_entry['directory'].gsub!(from, File.expand_path(to))
+    compilation_entry['command'].gsub!(from, File.expand_path(to))
+    compilation_entry['file'].gsub!(from, File.expand_path(to))
   end
 end
 
 puts "Writing #{flat_database.length} compilation commands to #{compilation_database}"
-File.open(compilation_database, 'w') { |f| f.print flat_database.to_json }
+File.open(compilation_database, 'w') { |f| f.print flat_database.to_json.gsub("},", "},\n") }
