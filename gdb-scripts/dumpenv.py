@@ -7,6 +7,12 @@ class DumpEnv(gdb.Command):
         super(DumpEnv, self).__init__("dumpenv", gdb.COMMAND_OBSCURE)
 
     def invoke(self, arg, from_tty):
-        pass
+        pos = 0
+        while True:
+            val = gdb.parse_and_eval('((char**)environ)[%d]' % pos)
+            if 0 == val.cast(gdb.lookup_type('long')):
+                break
+            print(val.string())
+            pos += 1
 
 DumpEnv()
