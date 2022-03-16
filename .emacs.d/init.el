@@ -17,7 +17,7 @@
  '(lsp-java-java-path "java11")
  '(package-selected-packages
    (quote
-    (lsp-java use-package dracula-theme dracula-them projectile olivetti go-eldoc go-mode toml-mode slime paredit love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua cmake-mode cargo))))
+    (terraform-mode lsp-java use-package dracula-theme dracula-them projectile olivetti go-eldoc go-mode toml-mode slime paredit love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua cmake-mode cargo))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -121,6 +121,8 @@
                      cargo
                      ;; C/C++
                      cquery
+                     ;; Terraform
+                     terraform-mode
 		     ;; Various quality of life plugins
 		     highlight-symbol highlight-parentheses
 		     eziam-theme dracula-theme use-package)))
@@ -489,7 +491,12 @@
 (global-set-key (kbd "<M-next>") 'my-next-buffer)
 (global-set-key (kbd "<M-prior>") 'my-prev-buffer)
 
+;;;;;;;;;;;;;;;
+;; Terraform ;;
+;;;;;;;;;;;;;;;
 
+(use-package terraform-mode
+  :hook terraform-format-on-save-mode)
 
 ;;;;;;;;;;;;;;;;;;;;
 ;; General config ;;
