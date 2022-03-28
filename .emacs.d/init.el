@@ -17,7 +17,7 @@
  '(lsp-java-java-path "java11")
  '(package-selected-packages
    (quote
-    (terraform-mode lsp-java use-package dracula-theme dracula-them projectile olivetti go-eldoc go-mode toml-mode slime paredit love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua cmake-mode cargo))))
+    (go-test terraform-mode lsp-java use-package dracula-theme dracula-them projectile olivetti go-eldoc go-mode toml-mode slime paredit love-minor-mode highlight-symbol highlight-parentheses futhark-mode flymake-lua flycheck eziam-theme elpy cquery company-lua cmake-mode cargo))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -110,7 +110,7 @@
                      ;; Python
                      elpy
                      ;; Go
-                     go-mode go-eldoc
+                     go-mode go-eldoc gotest
                      ;; LISP
                      paredit pkg-info slime
                      ;; Lua
@@ -123,9 +123,12 @@
                      cquery
                      ;; Terraform
                      terraform-mode
+                     ;; Helm
+                     helm helm-projectile
 		     ;; Various quality of life plugins
 		     highlight-symbol highlight-parentheses
-		     eziam-theme dracula-theme use-package)))
+		     eziam-theme dracula-theme use-package
+                     treemacs swiper)))
 
 (defun define-key-multimap (maps key command)
   (mapc (lambda (map) (define-key map key command)) maps))
@@ -536,6 +539,11 @@
      (define-key function-key-map "\e[1;3B" [M-down])
      (define-key function-key-map "\e[1;3C" [M-right])
      (define-key function-key-map "\e[1;3D" [M-left])))
+
+;; Swiper
+(require 'swiper)
+(global-set-key "\C-s" 'swiper)
+(global-set-key "\C-r" 'swiper-backward)
 
 ;; Start emacs server to allow opening files in this session from the command line
 (server-start)
