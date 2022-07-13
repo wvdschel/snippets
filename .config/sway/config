@@ -29,12 +29,17 @@ exec swayidle -w \
           timeout 300 'swaylock -f -c 000000' \
           timeout 600 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' \
           before-sleep 'swaylock -f -c 000000'
+# Gnome polkit agent
+exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+
 
 set $lock 'swaylock -f {your other options}'
 bindswitch --reload --locked lid:on exec $lock
 
+
+
 ### Input configuration
-input "2:7:SynPS/2_Synaptics_TouchPad" {
+input type:touchpad {
     dwt enabled
     tap enabled
     natural_scroll enabled
@@ -215,7 +220,7 @@ bindsym XF86Search exec ulauncher
 bindsym Zenkaku_Hankaku exec ulauncher
 
 input type:keyboard {
-    xkb_layout jp
+    xkb_layout us
 }
 
 font pango:DejaVu Sans Mono 14
@@ -223,6 +228,6 @@ output "*" bg ~/.wallpaper.avif fill
 output eDP-1 scale 1.2
 
 exec dunst
-assign [class="firefox"] workspace 9
+assign [app_id="firefox"] workspace 9
 assign [class="Code"] workspace 3
 
