@@ -1,0 +1,107 @@
+#!/bin/bash
+
+function verticalbar {
+	local VALUE=$1
+	local MAX=$2
+	local SEGMENT=$(expr 8 \* $VALUE / $MAX)
+	if [[ $SEGMENT -le 0 ]]; then
+		echo -en " "
+	elif [[ $SEGMENT -gt 8 ]]; then
+		echo -en "\xE2\x96\x92"
+	else
+		echo -en "\xE2\x96\x$(expr 80 + $SEGMENT)"
+	fi
+}
+
+function trimfile {
+	local FILENAME=$1
+	local MAXLINES=$2
+	local CONTENTS=$(tail -n$MAXLINES $FILENAME)
+	echo "$CONTENTS" > $FILENAME
+}
+
+function bargraph {
+	local SAMPLES_PER_BAR=$1
+	local LINE VALUE MAX
+	while true; do
+		for i in $(seq $SAMPLES_PER_BAR); do
+			read LINE 
+			{
+				local V
+				read -d' ' V || break
+				VALUE=$(expr $VALUE + $V)
+				read -d' ' V 
+				[[ -z $V ]] && break
+				MAX=$(expr $MAX + $V)
+			} <<<"$LINE"
+		done
+		[[ -z $VALUE ]] || [[ -z $MAX ]] ||verticalbar $VALUE $MAX
+		[[ -z $LINE ]] && break
+	done
+}
+
+function cpustats {
+	local LABEL TRASH USR NICE SYSTEM IDLE IOWAIT IRQ SOFTIRQ STEAL GUEST GUEST_NICE TOTAL NOTUSED USED
+	cat /proc/stat | head -n1 | {
+		for i in LABEL TRASH USR NICE SYSTEM IDLE IOWAIT IRQ SOFTIRQ STEAL GUEST GUEST_NICE; do
+			read -d' ' $i
+		done
+		TOTAL=$(expr $USR + $NICE + $SYSTEM + $IDLE + $IOWAIT + $IRQ + $SOFTIRQ + $STEAL + $GUEST + $GUEST_NICE)
+		NOTUSED=$(expr $IDLE + $IOWAIT)
+		USED=$(expr $TOTAL - $NOTUSED)
+		echo $USED $TOTAL >> /tmp/dwm_cpustats
+	}
+	trimfile /tmp/dwm_cpustats 15
+
+	local LINE VALUE MAX PREV_MAX PREV_VALUE
+	while read LINE; do
+		if (true); then
+			read -d' ' VALUE
+			read -d' ' MAX
+
+			if ! [ -z $PREV_VALUE ]; then
+				echo $(expr $VALUE - $PREV_VALUE) $(expr $MAX - $PREV_MAX)
+			fi
+
+			PREV_VALUE=$VALUE
+			PREV_MAX=$MAX
+		fi <<<"$LINE"
+	done < /tmp/dwm_cpustats | bargraph 3
+}
+
+function memstats {
+	local TOTALMEM=$(cat /proc/meminfo | grep MemTotal: | sed -r 's/[^0-9]+([0-9]+).*/\1/g')
+	local FREEMEM=$(cat /proc/meminfo | grep MemAvailable: | sed -r 's/[^0-9]+([0-9]+).*/\1/g')
+	local USEDMEM=$(expr $TOTALMEM - $FREEMEM)
+	echo $USEDMEM $TOTALMEM >> /tmp/dwm_memstats
+	trimfile /tmp/dwm_memstats 15
+	cat /tmp/dwm_memstats | bargraph 3
+}
+
+function powersource {
+	if ! (upower -e | grep -q battery); then
+		exit
+	fi
+	local BATTERY=$(upower -e | grep battery | head -n1)
+	if upower -i $BATTERY | egrep -q "state: +discharging"; then
+		echo -en "\xF0\x9F\x94\x8B"
+	else
+		echo -en "\xF0\x9F\x94\x8C"
+	fi
+	upower -i $BATTERY | grep "percentage:" | cut -d: -f2 | xargs echo -n
+	ESTIMATE=$(upower -i $BATTERY | grep "time to" | cut -d: -f2 | xargs echo -n)
+	[[ -z "$(echo ${ESTIMATE})"  ]] || echo -n " - ${ESTIMATE}"
+}
+
+function muted {
+	# Show hush emoji if microphone is muted
+	if (pactl list sources | grep -q 'Mute: yes'); then
+		echo -en "\xF0\x9F\xA4\xAB"
+	fi
+}
+
+function statusbar {
+	echo -en "$(muted) $(powersource) \xF0\x9F\x96\xA5 M: $(memstats)  C: $(cpustats) $(date +"%H:%M %d/%m")"
+}
+
+statusbar
