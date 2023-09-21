@@ -1,0 +1,6 @@
+#!/bin/bash
+
+PORTS="-R8001:127.0.0.1:8000 -R8096:127.0.0.1:8096 -R18081:127.0.0.1:8080 -R2222:127.0.0.1:22" 
+
+HOST=fixnum.org
+ssh ${PORTS} wim@$HOST bash -c "'while true; do date; sleep 10; done'"

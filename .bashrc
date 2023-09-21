@@ -1,3 +1,4 @@
+export PATH=~/bin:~/go/bin:$PATH
 # Customized PS1 prompt
 PS_NORMAL="[\u@\h \w]"
 prompt() {
@@ -64,8 +65,8 @@ function notify_done()
     local EXIT_CODE=$1
     local LAST_CMD=`HISTTIMEFORMAT= history 1 | sed -e "s/^[ ]*[0-9]*[ ]*//"`;
     local TIME=$(date +%s)
-    local PLAY=$(which play)
-    local NOTIFY=$(which notify-send)
+    local PLAY=$(which play 2> /dev/null)
+    local NOTIFY=$(which notify-send 2> /dev/null)
     if ! [ -z $START_TIME ] &&
             ! [ -z $NOTIFY ] &&
             [ $TIME -gt $(( $START_TIME + 30 )) ]; then
@@ -73,9 +74,9 @@ function notify_done()
             (for i in {1..2}; do $PLAY -qn synth 1 sine D fade q 0.1 0.2 0.1; done &)
 	fi
         if [ $EXIT_CODE -eq 0 ]; then
-            $NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -c transfer.complete "Command finished" "$LAST_CMD"
+	    ($NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -c transfer.complete "Command finished" "$LAST_CMD" 2>/dev/null &)
         else
-            $NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -i error -c transfer.complete "Command failed ($EXIT_CODE)" "$LAST_CMD"
+	    ($NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -i error -c transfer.complete "Command failed ($EXIT_CODE)" "$LAST_CMD" 2>/dev/null &)
         fi
     fi
     unset START_TIME
@@ -86,13 +87,44 @@ function preexec()
     START_TIME=$(date +%s)
 }
 
+function _cdp_completions()
+{
+    if [ "${#COMP_WORDS[@]}" != "2" ]; then
+        return
+    fi
+    while read i
+    do
+        if [[ "$(basename "$i")" =~ ^"${COMP_WORDS[1]}" ]]; then
+                COMPREPLY+=($(basename "$i"))
+        fi
+    done <<<"$(find ~/Unison/Code -maxdepth 2 -type d -not -name '.*' -print0 | xargs -0 -i echo "{}")"
+}
+
+function cdp()
+{
+    local newdir=""
+    newdir=$(find ~/Unison/Code -maxdepth 2 -type d -not -name '.*' -print0 | xargs -0 -i echo "{}" | while read i
+    do
+        if [[ "$(basename "$i")" == "$1" ]]; then
+                echo "$i"
+        fi
+    done)
+    if ! [[ -z "$newdir" ]]; then
+        cd "$newdir"
+    fi
+}
+
+complete -F _cdp_completions cdp
+
 unset START_TIME
 source $HOME/.cargo/env
 alias syncup=~/Unison/sync.sh
 PROMPT_COMMAND=prompt
+source /usr/share/bash-completion/bash_completion 
 
 # On OpenSUSE, sbin is not part of PATH by default
 #export PATH=$PATH:/sbin:/usr/sbin
 #export NDK_HOME=~/Apps/android-ndk-r12b
 #export ANDROID_HOME=~/Apps/android-sdk-linux
 #export PATH=$ANDROID_HOME/tools:$PATH
+. "$HOME/.cargo/env"

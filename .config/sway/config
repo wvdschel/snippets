@@ -8,11 +8,11 @@ set $down j
 set $up k
 set $right l
 # Your preferred terminal emulator
-set $term terminator
+set $term konsole
 # Your preferred application launcher
 # Note: pass the final command to swaymsg so that the resulting window can be opened
 # on the original workspace that the command was run on.
-set $menu ulauncher
+set $menu fuzzel
 
 ### Output configuration
 # Example configuration:
@@ -28,12 +28,14 @@ set $menu ulauncher
 exec swayidle -w \
           timeout 300 'swaylock -f -c 000000' \
           timeout 600 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' \
-          before-sleep 'swaylock -f -c 000000'
+          before-sleep 'swaylock -f -c 285577'
 # Gnome polkit agent
 exec /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+# XDG integration
+exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway DISPLAY SWAYSOCK
+exec /usr/libexec/xdg-desktop-portal-wlr -r
 
-
-set $lock 'swaylock -f {your other options}'
+set $lock 'swaylock -f -c 285577'
 bindswitch --reload --locked lid:on exec $lock
 
 
@@ -44,6 +46,7 @@ input type:touchpad {
     tap enabled
     natural_scroll enabled
     middle_emulation enabled
+    click_method clickfinger
 }
 
 # You can get the names of your inputs by running: swaymsg -t get_inputs
@@ -216,18 +219,24 @@ bindsym XF86MonBrightnessUp exec brightnessctl set 5%+
 bindsym XF86AudioPlay exec playerctl play-pause
 bindsym XF86AudioNext exec playerctl next
 bindsym XF86AudioPrev exec playerctl previous
-bindsym XF86Search exec ulauncher
-bindsym Zenkaku_Hankaku exec ulauncher
+bindsym XF86Search exec $menu
+bindsym Zenkaku_Hankaku exec $menu
 
 input type:keyboard {
     xkb_layout us
 }
 
 font pango:DejaVu Sans Mono 14
-output "*" bg ~/.wallpaper.avif fill
-output eDP-1 scale 1.2
+output "*" bg ~/.wallpaper.png fill
+output "Goldstar Company Ltd LG HDR 4K 0x0000D5F6" scale 1.4
+output "LG Electronics LG HDR 4K 0x0000D5F6" scale 1.4
+output "Unknown 0x0A3A 0x00000000" mode 1920x1200@60Hz
+output "CYS CYS-135UC Unknown" mode 3000x2000@59.985Hz
+output "Unknown 0x1303 0x00000000" scale 1.2
 
 exec dunst
 assign [app_id="firefox"] workspace 9
+assign [app_id="Firefox-esr"] workspace 9
+assign [class="Firefox-esr"] workspace 9
 assign [class="Code"] workspace 3
-
+assign [app_id="org.kde.kate"] workspace 3

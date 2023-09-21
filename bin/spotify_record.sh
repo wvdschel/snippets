@@ -1,41 +1,43 @@
 #!/bin/bash
-# Spotify song recorder.
+# Spotify song recorder. Records songs played back with Spotify to ~/Music, as MP3 files with correct-ish ID3 tags.
+# Songs are organized by album, one directory per album.
+# Only works on Linux with pulseaudio.
+#
 # For Ubuntu users: apt install sox libsox-fmt-mp3 id3
-# TODO: allow local playback with command line option
 # TODO: record into playlist directory instead of album
 
 LAST_FILENAME=""
 
 function get_track_info() {
-    dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get string:'org.mpris.MediaPlayer2.Player' string:'Metadata' 2> /dev/null
+    dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get string:'org.mpris.MediaPlayer2.Player' string:'Metadata' | tr '\n' ' ' 2> /dev/null
 }
 
 function get_track_id() {
-    echo "$@" | sed -re 's/.*string "mpris:trackid" variant string "spotify:([^"]+)".*/\1/'
+    echo "$@" | sed -re 's|.*string\s+"mpris:trackid"\s+variant\s+string\s+"/com/spotify/([^"]+)".*|\1|'
 }
 
 function get_artist_name() {
-    echo "$@" | sed -re 's/.*string "xesam:artist" variant array \[ string "([^"]+)".*/\1/'
+    echo "$@" | sed -re 's/.*string\s+"xesam:artist"\s+variant\s+array\s+\[\s+string\s+"([^"]+)".*/\1/'
 }
 
 function get_track_name() {
-    echo "$@" | sed -re 's/.*string "xesam:title" variant string "([^"]+)".*/\1/'
+    echo "$@" | sed -re 's/.*string\s+"xesam:title"\s+variant\s+string\s+"([^"]+)".*/\1/'
 }
 
 function get_track_number() {
-    echo "$@" | sed -re 's/.*string "xesam:trackNumber" variant int32 ([0-9]+).*/\1/'
+    echo "$@" | sed -re 's/.*string\s+"xesam:trackNumber"\s+variant\s+int32\s+([0-9]+).*/\1/'
 }
 
 function get_album_name() {
-    echo "$@" | sed -re 's/.*string "xesam:album" variant string "([^"]+)".*/\1/'
+    echo "$@" | sed -re 's/.*string\s+"xesam:album"\s+variant\s+string\s+"([^"]+)".*/\1/'
 }
 
 function get_album_disc() {
-    echo "$@" | sed -re 's/.*string "xesam:discNumber" variant int32 ([0-9]+).*/\1/'
+    echo "$@" | sed -re 's/.*string\s+"xesam:discNumber"\s+variant\s+int32\s+([0-9]+).*/\1/'
 }
 
 function get_album_artist() {
-    echo "$@" | sed -re 's/.*string "xesam:albumArtist" variant array \[ string "([^"]+)".*/\1/'
+    echo "$@" | sed -re 's/.*string\s+"xesam:albumArtist"\s+variant\s+array\s+\[\s+string\s+"([^"]+)".*/\1/'
 }
 
 function wait_for_next_track() {
@@ -57,7 +59,7 @@ function record_track() {
     local TRACKID=$(get_track_id ${TRACKINFO})
 
     case "${TRACKID}" in
-        track:*)
+        track/*)
             local TRACK_ARTIST=$(get_artist_name ${TRACKINFO})
             local TRACK_NAME=$(get_track_name ${TRACKINFO})
             local TRACK_NUMBER=$(get_track_number ${TRACKINFO})
@@ -82,11 +84,14 @@ function record_track() {
             kill $LAME_PID
             (sleep 5; id3 -t "${TRACK_NAME}" -T "${TRACK_NUMBER}" -A "${ALBUM_NAME}" -a "${TRACK_ARTIST}" "${FILENAME}" > /dev/null) &
             ;;
-        ad:*)
+        ad/*)
             LAST_FILENAME=""
             echo Waiting for advertisement to end.
             wait_for_next_track
             move_spotify_input
+	    ;;
+	*)
+	    echo "Unknown track type: ${TRACKID}"
     esac
 }
 
@@ -124,6 +129,7 @@ function create_sink() {
     fi
     if !( pactl load-module module-combine-sink sink_name=spotify-mixer slaves=spotify-recorder,${DEFAULT_SINK} ); then
         echo "Failed to create PulseAudio sink, giving up."
+        pactl unload-module module-null-sink
         exit 1
     fi
 }

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+SSH="ssh -o ConnectTimeout=5"
+DESTINATION=wim@fixnum.org
+PORTS="-R2222:127.0.0.1:22 -R8096:127.0.0.1:8096"
+$SSH $PORTS $DESTINATION bash -c "'while true; do echo \$(hostname) \$(date); sleep 10; done'"
