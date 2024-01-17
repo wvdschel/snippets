@@ -239,4 +239,5 @@ assign [app_id="firefox"] workspace 9
 assign [app_id="Firefox-esr"] workspace 9
 assign [class="Firefox-esr"] workspace 9
 assign [class="Code"] workspace 3
+assign [class="VSCodium"] workspace 3
 assign [app_id="org.kde.kate"] workspace 3
