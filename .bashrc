@@ -65,18 +65,14 @@ function notify_done()
     local EXIT_CODE=$1
     local LAST_CMD=`HISTTIMEFORMAT= history 1 | sed -e "s/^[ ]*[0-9]*[ ]*//"`;
     local TIME=$(date +%s)
-    local PLAY=$(which play 2> /dev/null)
     local NOTIFY=$(which notify-send 2> /dev/null)
     if ! [ -z $START_TIME ] &&
             ! [ -z $NOTIFY ] &&
             [ $TIME -gt $(( $START_TIME + 30 )) ]; then
-	if ! [ -z $PLAY ]; then
-            (for i in {1..2}; do $PLAY -qn synth 1 sine D fade q 0.1 0.2 0.1; done &)
-	fi
         if [ $EXIT_CODE -eq 0 ]; then
-	    ($NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -c transfer.complete "Command finished" "$LAST_CMD" 2>/dev/null &)
+    	    ($NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -c transfer.complete "Command finished" "$LAST_CMD" 2>/dev/null &)
         else
-	    ($NOTIFY -t $(( $TIME + 3 )) -a "Terminal" -i error -c transfer.complete "Command failed ($EXIT_CODE)" "$LAST_CMD" 2>/dev/null &)
+    	    ($nOTIFY -t $(( $TIME + 3 )) -a "Terminal" -i error -c transfer.complete "Command failed ($EXIT_CODE)" "$LAST_CMD" 2>/dev/null &)
         fi
     fi
     unset START_TIME
@@ -128,3 +124,4 @@ source /usr/share/bash-completion/bash_completion
 #export ANDROID_HOME=~/Apps/android-sdk-linux
 #export PATH=$ANDROID_HOME/tools:$PATH
 . "$HOME/.cargo/env"
+export EDITOR=hx
