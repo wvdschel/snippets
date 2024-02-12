@@ -5,9 +5,11 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("9724b3abaf500b227faa036dcf817abed9764802835ba6e8d1e475c877205157" default))
  '(mac-option-modifier 'meta)
  '(package-selected-packages
-   '(eglot yaml-mode flycheck-golangci-lint zig-mode rust-mode flycheck company-fuzzy go-dlv go-mode go company treemacs)))
+   '(rebecca-theme eglot yaml-mode flycheck-golangci-lint zig-mode rust-mode flycheck company-fuzzy go-dlv go-mode go company treemacs)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -50,6 +52,9 @@
       (when parent
         (find-dir-containing parent fname)))))
 
+(defun cd-to-current-buffer ()
+  (interactive)
+  (cd (parent-directory (expand-file-name (buffer-file-name)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Add tools to PATH ;;
@@ -96,6 +101,10 @@
 
 (add-hook 'before-save-hook #'format-on-save)
 
+(global-set-key [f2] 'eglot-rename)
+(global-set-key [f4] 'eglot-code-action-quickfix)
+(global-set-key [f7] 'flymake-goto-next-error)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Use golangci for flycheck ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,6 +124,10 @@
 (global-company-mode)
 (global-eldoc-mode)
 (global-flycheck-mode)
+
+(load-theme 'rebecca)
+(set-face-attribute 'default nil :height 150)
+(set-face-attribute 'default t :font "BlexMono Nerd Font Mono:style=Regular")
 
 (server-start)
 
