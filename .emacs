@@ -5,11 +5,12 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(before-save-hook '(eglot-format-buffer eglot-code-action-organize-imports))
  '(custom-safe-themes
    '("9724b3abaf500b227faa036dcf817abed9764802835ba6e8d1e475c877205157" default))
  '(mac-option-modifier 'meta)
  '(package-selected-packages
-   '(rebecca-theme eglot yaml-mode flycheck-golangci-lint zig-mode rust-mode flycheck company-fuzzy go-dlv go-mode go company treemacs)))
+   '(highlight-symbol rebecca-theme eglot yaml-mode flycheck-golangci-lint zig-mode rust-mode flycheck company-fuzzy go-dlv go-mode go company treemacs)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -85,6 +86,14 @@
 
 (global-set-key [C-f3] 'git-grep)
 
+;;;;;;;;;;;;;;;;;;;;;;;
+;; Highlight symbols ;;
+;;;;;;;;;;;;;;;;;;;;;;;
+
+(global-set-key [f12] 'highlight-symbol-at-point)
+(global-set-key [f3] 'highlight-symbol-next)
+(global-set-key [(shift f3)] 'highlight-symbol-prev)
+
 ;;;;;;;;;;;;;;;;;
 ;; LSP (eglot) ;;
 ;;;;;;;;;;;;;;;;;
@@ -92,14 +101,6 @@
 (add-hook 'go-mode-hook 'eglot-ensure)
 (add-hook 'rust-mode-hook 'eglot-ensure)
 (add-hook 'zig-mode-hook 'eglot-ensure)
-
-(defun format-on-save ()
-  "Format on save using eglot."
-  (when (member 'eglot--managed-mode minor-mode-list)
-    (eglot-code-action-organize-imports)
-    (eglot-format-buffer)))
-
-(add-hook 'before-save-hook #'format-on-save)
 
 (global-set-key [f2] 'eglot-rename)
 (global-set-key [f4] 'eglot-code-action-quickfix)
